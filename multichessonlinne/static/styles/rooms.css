@@ -1,0 +1,10 @@
+.rooms-container{
+    display: grid;
+    grid-template-columns: 3fr 3fr 3fr;
+}
+.rooms-container div {
+    width: 100px;        
+    height: 150px;      
+    padding: 10px;       
+    box-sizing: border-box; 
+}
