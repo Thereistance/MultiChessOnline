@@ -1,0 +1,20 @@
+{% extends 'main.html' %}
+
+{% block content %}
+
+{{room.name}}
+{% for player in room.players.all %}
+<p>{{player}}</p>
+{% endfor %}
+{% if room.players.count >= 2 and room.creator == request.user %}
+<form action="{% url 'start-game' room.id %}" method="post">
+    {% csrf_token %}
+<button type="submit"> Start game</button>
+</form>
+{% elif room.creator != request.user and room.players.count < 2 %}
+<form action="{% url 'join-game' room.id %}" method="post">
+    {% csrf_token %}
+<button type="submit">Join game </button>
+</form>
+{% endif %}
+{% endblock content %}

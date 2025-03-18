@@ -1,0 +1,24 @@
+{% extends 'main.html' %}
+{% load static %}
+{% block content %}
+<link rel='stylesheet' type='text/css' media='screen' href="{% static 'styles/rooms.css' %}">
+<span>
+   <a href="{% url 'create-room' %}"> Create a new room </a>
+   <span>
+      <div class="rooms-container">
+         {% for room in rooms %}
+         <div>
+            <a href="{% url 'room' room.id %}">
+               {{room.name}}
+            </a>
+
+            <hr>
+            @{{room.creator.username}} waiting
+            {% if user.is_authenticated and user.username == room.creator.username %}
+            <div><a href="{% url 'update-room' room.id %}">Edit</a> <a href="{% url 'delete-room' room.id %}">Delete</a> </div>
+            {% endif %}
+         </div>
+         {% endfor %}
+      </div>
+
+      {% endblock %}

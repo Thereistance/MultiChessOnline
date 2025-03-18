@@ -1,44 +1,66 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 
-class Player(models.Model):
-    user = models.OneToOneField(User,on_delete=models.CASCADE)
-    rating = models.IntegerField(default=0)
+
+class Rating(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='rating')
+    score = models.IntegerField(default=1000)
+    class Meta:
+        ordering = ['-score']
     def __str__(self):
-        return self.user.username
+        return f"{self.user.username}: {self.score}"
         
-    
 class Room(models.Model):
-    name = models.CharField(max_length=200)
-    description = models.TextField(blank=True, null=True)
-    creater = models.ForeignKey(Player, related_name='created_rooms',on_delete=models.CASCADE, null = False)
-    created = models.DateTimeField(auto_now_add=True)
-    # updated = models.DateTimeField(auto_now=True)
-    is_active=models.BooleanField(default=False)
-    class Meta:
-        ordering = ['created']
-    def __str__(self):
-        return self.name
-    
-class Game(models.Model):
-    game_room = models.OneToOneField(Room, on_delete=models.CASCADE) 
-    player_1 = models.ForeignKey(Player, related_name='game_as_player1', null=True, on_delete=models.SET_NULL)
-    player_2 = models.ForeignKey(Player, related_name='game_as_player2', null=True, blank=True, on_delete=models.SET_NULL)
-    start_time = models.DateTimeField(auto_now_add=True, blank=True)
-    end_time = models.DateTimeField(null=True, blank = True)
-    # status = models.CharField(max_length=50, default='waiting')
-    def __str__(self):
-        return self.game_room.name
-    
-class Message(models.Model):
-    room = models.ForeignKey(Room,related_name='room_messages', on_delete=models.CASCADE)
-    player = models.ForeignKey(Player,related_name='player_messages', on_delete=models.CASCADE)
-    body = models.TextField()
-    created = models.DateTimeField(auto_now_add=True)
+    name = models.CharField(max_length=255, unique=True)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_rooms')
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=False)
+    players = models.ManyToManyField(User, related_name='rooms', blank=True)
     
     class Meta:
-        ordering = ['-created']
+        ordering = ['-created_at']
         
     def __str__(self):
-        return self.body[0:50]
+        return self.name    
+
+class Game(models.Model):
+    room = models.OneToOneField(Room, on_delete=models.CASCADE, related_name='game')
+    player1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='games_as_player1')
+    player2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='games_as_player2', null=True, blank=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    winner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='won_games')
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"Game in {self.room.name}"
+
+    def start_game(self):
+        # Активируем комнату, когда игра начинается
+        self.room.is_active = True
+        self.room.save()
+
+    def end_game(self):
+        # Деактивируем комнату, когда игра заканчивается
+        self.room.is_active = False
+        self.room.save()
+        self.is_active = False
+        self.finished_at = timezone.now()
+        self.save()
+
+    def __str__(self):
+        return f"Game in {self.room.name}"
+     
+class Message(models.Model):
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='messages')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages')
+    text = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"{self.user.username}: {self.text}"
     

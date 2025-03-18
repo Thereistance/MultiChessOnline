@@ -1,0 +1,11 @@
+{% extends 'main.html' %}
+
+{% block content %}
+{% if request.user == game.player1 or request.user == game.player2 %}
+<h1>Game in Room: {{ game.room.name }}</h1>
+
+<p>Player 1: {{ game.player1.username }}</p>
+<p>Player 2: {{ game.player2.username }}</p>
+<p>Status: {% if game.is_active %}Active{% else %}Finished{% endif %}</p>
+{% endif %}
+{% endblock %}
