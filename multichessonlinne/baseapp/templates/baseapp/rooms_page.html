@@ -1,24 +1,141 @@
 {% extends 'main.html' %}
-{% load static %}
+
 {% block content %}
-<link rel='stylesheet' type='text/css' media='screen' href="{% static 'styles/rooms.css' %}">
-<span>
-   <a href="{% url 'create-room' %}"> Create a new room </a>
-   <span>
-      <div class="rooms-container">
-         {% for room in rooms %}
-         <div>
-            <a href="{% url 'room' room.id %}">
-               {{room.name}}
-            </a>
 
-            <hr>
-            @{{room.creator.username}} waiting
-            {% if user.is_authenticated and user.username == room.creator.username %}
-            <div><a href="{% url 'update-room' room.id %}">Edit</a> <a href="{% url 'delete-room' room.id %}">Delete</a> </div>
-            {% endif %}
-         </div>
-         {% endfor %}
-      </div>
+<!-- Подключаем шрифт Titillium Web -->
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600&display=swap" rel="stylesheet">
 
-      {% endblock %}
+<style>
+    /* Основной стиль страницы */
+    body {
+        font-family: 'Titillium Web', sans-serif;
+    }
+
+    /* Контейнер для всех комнат */
+    .rooms-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        padding: 20px;
+        justify-content: center;
+        max-width: 1200px; /* Ограничиваем ширину */
+        width: 100%;
+        margin: 0 auto; /* Центрируем */
+        overflow: hidden; /* Защищает от выхода элементов за границы */
+    }
+
+    /* Карточка комнаты */
+    .room-card {
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        text-align: center;
+        font-size: 18px;
+        font-weight: 600;
+        flex: 1 1 250px;
+        max-width: 320px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .room-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Ссылка на комнату */
+    .room-card a {
+        text-decoration: none;
+        color: #ffeb3b;
+        font-size: 20px;
+    }
+
+    .room-card a:hover {
+        color: #ffd700;
+        text-decoration: underline;
+    }
+
+    /* Информация о создателе */
+    .room-creator {
+        margin-top: 10px;
+        font-size: 16px;
+        font-weight: 400;
+        opacity: 0.9;
+    }
+
+    /* Действия с комнатой (редактирование, удаление) */
+    .room-actions {
+        margin-top: 12px;
+    }
+
+    .room-actions a {
+        margin: 0 8px;
+        color: #ffeb3b;
+        font-weight: 600;
+        transition: color 0.3s ease;
+    }
+
+    .room-actions a:hover {
+        color: #ffd700;
+        text-decoration: underline;
+    }
+
+    /* Кнопка создания комнаты */
+    .create-room-link {
+        display: block;
+        width: fit-content;
+        max-width: 300px; /* Ограничиваем ширину */
+        margin: 0 auto 20px auto; /* Центрируем */
+        padding: 12px 24px;
+        background-color: #1de9b6; /* Неоново-зеленый */
+        color: #003b46; /* Темно-синий текст */
+        text-decoration: none;
+        font-size: 20px;
+        font-weight: 600;
+        border-radius: 10px;
+        transition: background-color 0.3s ease, transform 0.2s ease;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        text-align: center;
+    }
+
+    .create-room-link:hover {
+        background-color: #14cba8;
+        transform: scale(1.05);
+    }
+
+    /* Адаптация для мобильных устройств */
+    @media (max-width: 768px) {
+        .rooms-container {
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .create-room-link {
+            width: 90%;
+            max-width: 280px;
+        }
+    }
+</style>
+
+<div>
+   <a class="create-room-link" href="{% url 'create-room' %}">➕ Create a new room</a>
+
+   <div class="rooms-container">
+     {% for room in rooms %}
+     <div class="room-card">
+       <a href="{% url 'room' room.id %}">{{ room.name }}</a>
+       <div class="room-creator">👤 @{{ room.creator.username }} is waiting...</div>
+       
+       {% if user.is_authenticated and user.username == room.creator.username %}
+       <div class="room-actions">
+         <a href="{% url 'update-room' room.id %}">✏ Edit</a>
+         <a href="{% url 'delete-room' room.id %}">❌ Delete</a>
+       </div>
+       {% endif %}
+     </div>
+     {% endfor %}
+   </div>
+</div>
+
+{% endblock %}

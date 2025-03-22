@@ -62,8 +62,17 @@ def roomsPage(request):
 @login_required(login_url='login')
 def roomPage(request,pk):
     room = Room.objects.get(id=pk)
+    room_messages = room.messages.order_by('-created_at')
+    if request.method == "POST":
+        if request.user.is_authenticated:
+            room_message = Message.objects.create(
+                user=request.user,
+                room = room,
+                text = request.POST.get('body')
+            )
+            return redirect('room', room.id)
     if not room.is_active:
-        context = {'room': room}
+        context = {'room': room,'room_messages': room_messages}
     else:
        return redirect('game',room.game.id)
     return render(request, 'baseapp/room.html', context)
@@ -88,7 +97,8 @@ def startGame(request,pk):
     active_game = Game.objects.filter(room=room, is_active=True).first()
     if active_game:
         messages.error(request, "A game is already active in this room.")
-        return redirect('game', active_game.id)
+        if request.user in players:
+            return redirect('game', active_game.id)
     
     if room.players.count() == 2 and request.user == room.creator:
      

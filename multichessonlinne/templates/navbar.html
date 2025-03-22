@@ -1,13 +1,11 @@
-{% load static %}
 
+<style>
 
-    <link rel='stylesheet' type='text/css' media='screen' href="{% static 'styles/navbar.css' %}">
-
-
+</style>
     <div class="navbar">
-        <p><a href="{% url 'rooms' %}">Play</a></p>
-        <p><a>Learn</a></p>
-        <p><a>Watch</a></p> 
-        <p><a>Chat</a></p>
-    </div> 
+        <li><a href="{% url 'rooms' %}">Play</a></li>
+        <li><a>Learn</a></li>
+        <li><a>Watch</a></li>
+        <li><a>Chat</a></li>
+    </div>
 

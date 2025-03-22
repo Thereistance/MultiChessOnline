@@ -1,24 +1,112 @@
 {% extends 'main.html' %}
 
-
 {% block content %}
+<style>
+    /* 🔹 Контейнер формы */
+    .login-container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        width: 350px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
 
-<div>
+    /* 🔹 Заголовок */
+    .login-container h2 {
+        margin-bottom: 20px;
+        color: #333;
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    /* 🔹 Поля ввода */
+    .input-group {
+        width: 100%;
+        margin-bottom: 15px;
+        text-align: left;
+    }
+
+    .input-group label {
+        font-weight: 600;
+        color: #333;
+        font-size: 14px;
+        display: block;
+        margin-bottom: 5px;
+    }
+
+    .input-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 16px;
+        transition: 0.3s;
+    }
+
+    .input-group input:focus {
+        border-color: #007bff;
+        outline: none;
+        box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    }
+
+    /* 🔹 Кнопка */
+    .login-btn {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        padding: 12px;
+        font-size: 16px;
+        width: 100%;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .login-btn:hover {
+        background-color: #0056b3;
+    }
+
+    /* 🔹 Ссылка на регистрацию */
+    .register-link {
+        margin-top: 15px;
+        font-size: 14px;
+    }
+
+    .register-link a {
+        color: #007bff;
+        text-decoration: none;
+        font-weight: bold;
+    }
+
+    .register-link a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<!-- 🔹 Контейнер для формы -->
+<div class="login-container">
+    <h2>🔑 Login to Your Account</h2>
+
     <form action="" method="POST">
         {% csrf_token %}
-        <div>
+
+        <div class="input-group">
             <label>Username</label>
-            <input type="text" name="username" placeholder="Enter username....." />
+            <input type="text" name="username" placeholder="Enter username..." required />
         </div>
 
-        <div>
+        <div class="input-group">
             <label>Password</label>
-            <input type="text" name="password" placeholder="Enter password....." />
+            <input type="password" name="password" placeholder="Enter password..." required />
         </div>
 
+        <button type="submit" class="login-btn">Confirm</button>
 
-        <input value="Confirm" type="submit" />
-        <p><a href="{% url 'register' %}" >Havent signed up yet?</a></p>
+        <p class="register-link">Haven't signed up yet? <a href="{% url 'register' %}">Register here</a></p>
     </form>
 </div>
 {% endblock content %}

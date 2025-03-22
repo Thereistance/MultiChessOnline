@@ -1,0 +1,68 @@
+<style>
+    .chat-container {
+          width: 100 px; /* Занимает половину ширины страницы */
+          margin: 0; /* Убираем все отступы */
+          padding: 20px;
+          border: 1px solid #ccc;
+          border-radius: 10px;
+          background-color: #f9f9f9;
+          box-sizing: border-box; /* Учитываем padding в ширине */
+      }
+  .message {
+      margin-bottom: 15px;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .message .text {
+      font-size: 16px;
+      color: #333;
+  }
+
+  .message .author {
+      font-size: 14px;
+      color: #777;
+      margin-top: 5px;
+  }
+
+  .message .author::before {
+      content: "by ";
+      color: #999;
+  }
+
+  .form-container {
+      margin-top: 20px;
+      margin-right: 20px;
+  }
+
+  .form-container input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+  }
+
+  .form-container input[type="text"]::placeholder {
+      color: #999;
+  }
+</style>
+<div class="chat-container">
+    <div class="messages">
+        {% for message in room_messages %}
+        <div class="message">
+            <div class="text">{{ message.text }}</div>
+            <div class="author">@{{ message.user }}</div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="form-container">
+        <form method="POST" action="">
+            {% csrf_token %}
+            <input type="text" name="body" placeholder="Write your message......">
+        </form>
+    </div>
+</div>

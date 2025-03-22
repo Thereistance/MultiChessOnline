@@ -1,40 +1,200 @@
-<!DOCTYPE html>
 {% load static %}
-<html>
+
+<!DOCTYPE html>
+<html lang="en">
 
 <head>
-    <meta charset='utf-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>Page Title</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <link rel='stylesheet' type='text/css' media='screen' href="{% static 'styles/main.css' %}">
-    <!-- <script src='main.js'></script> -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Platform</title>
+
+    <!-- Подключаем шрифт Titillium Web -->
+    <link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <!-- Подключаем основной CSS -->
+    <link rel="stylesheet" type="text/css" href="{% static 'styles/main.css' %}">
+
+    <style>
+        body {
+    font-family: 'Titillium Web', sans-serif;
+    background-color: #f0f4f8;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* 🔹 HEADER */
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #1c1c1c;
+    color: white;
+    padding: 15px 30px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    height: 70px;
+}
+
+/* Логотип */
+.header-logo img {
+    height: 50px;
+    transition: transform 0.3s ease-in-out;
+}
+
+.header-logo img:hover {
+    transform: scale(1.1);
+}
+
+/* 🔹 Пользовательская панель */
+.user-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-right: 40px;
+}
+
+.user-container p {
+    margin: 0;
+    color: white;
+    font-weight: 500;
+   
+}
+
+.user-container a {
+    background: white;
+    color: #1c1c1c;
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: 0.3s ease-in-out;
+    white-space: nowrap;
+}
+
+.user-container a:hover {
+    background: #ddd;
+    color: #333;
+}
+
+/* 🔹 Основной контейнер */
+.main-content-container {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* NAVBAR (боковое меню) */
+.navbar {
+    width: 180px;
+    background-color: #232323;
+    display: flex;
+    flex-direction: column;
+    padding-top: 20px;
+    height: 100%;
+}
+
+.navbar a {
+    text-decoration: none;
+    color: white;
+    font-size: 18px;
+    font-weight: 500;
+    padding: 15px 20px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.navbar a:hover {
+    background-color: #007bff;
+}
+
+/* 🔹 Основной контент (выравнивание сверху) */
+.main-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* Контент по центру */
+    padding: 20px;
+    overflow-y: auto;
+}
+
+/* 🔹 Адаптация под мобильные устройства */
+@media (max-width: 768px) {
+    .main-content-container {
+        flex-direction: column;
+    }
+
+    .navbar {
+        width: 100%;
+        height: auto;
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    .navbar a {
+        padding: 10px;
+    }
+
+    .header-container {
+        flex-direction: column;
+        height: auto;
+        padding: 10px;
+        align-items: center;
+        text-align: center;
+    }
+
+    .user-container {
+        justify-content: center;
+        margin-top: 5px;
+    }
+}
+    </style>
 </head>
 
 <body>
 
-    {% include 'header.html' %}
-
-     <!-- {% if messages %}
-    <ul class="messages">
-        {% for message in messages %}
-        <li>{{ message }}</li>
-        {% endfor %}
-    </ul>
-    {% endif %}  -->
-    <div class="main-content-container">
-
-
-        <div>
-            {% include 'navbar.html' %}
+    <!-- HEADER -->
+    <div class="header-container">
+        <!-- Логотип -->
+        <div class="header-logo">
+            <a href="{% url 'home' %}">
+                <img src="{% static 'images/img1.png' %}" alt="Logo">
+            </a>
         </div>
-        <div>
+
+        <!-- Информация о пользователе -->
+        <div class="user-container">
+            {% if request.user.is_authenticated %}
+            <p>Welcome, <strong>{{ request.user.username }}</strong></p>
+            <p><a href="{% url 'logout' %}">Logout</a></p>
+            {% else %}
+            <p><a href="{% url 'login' %}">Login</a></p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- НАВИГАЦИЯ + ОСНОВНОЙ КОНТЕНТ -->
+    <div class="main-content-container">
+        <!-- Навбар (слева) -->
+        <div class="navbar">
+            <a href="{% url 'rooms' %}">🎮 Play</a>
+            <a href="#">📚 Learn</a>
+            <a href="#">📺 Watch</a>
+            <a href="#">💬 Chat</a>
+        </div>
+
+        <!-- Основное содержимое (по центру) -->
+        <div class="main-content">
             {% block content %}
-
-
             {% endblock %}
         </div>
     </div>
-    </body>
 
+</body>
 </html>

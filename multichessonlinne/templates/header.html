@@ -1,14 +1,96 @@
 {% load static %}
 
+<!-- Подключаем шрифт Titillium Web -->
+<link href="https://fonts.googleapis.com/css2?family=Titillium+Web:wght@300;400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" type="text/css" media="screen" href="{% static 'styles/header.css' %}">
 
-<link rel='stylesheet' type='text/css' media='screen' href="{% static 'styles/header.css' %}">
+<style>
+    /* Общие стили с Titillium Web */
+    body {
+        font-family: 'Titillium Web', sans-serif;
+    }
 
+    /* Основной контейнер хедера */
+    .header-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(135deg, #6a11cb, #2575fc);
+        padding: 15px 30px;
+        /* border-radius: 10px; */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        color: white;
+        font-weight: 400;
+    }
+
+    /* Логотип */
+    .image-header {
+        height: 50px;
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .image-header:hover {
+        transform: scale(1.1);
+    }
+
+    /* Контейнер пользователя */
+    .header-user-container {
+        text-align: right;
+    }
+
+    /* Стилизация ссылок */
+    .header-user-container a {
+        background: white;
+        color: #6a11cb;
+        padding: 8px 15px;
+        border-radius: 5px;
+        text-decoration: none;
+        font-weight: 600;
+        transition: 0.3s ease-in-out;
+    }
+
+    .header-user-container a:hover {
+        background: #ddd;
+        color: #333;
+    }
+
+    /* Блок сообщений */
+    .messages {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        text-align: center;
+    }
+
+    .messages li {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 5px;
+        font-weight: 400;
+    }
+
+    /* Адаптация под мобильные устройства */
+    @media (max-width: 768px) {
+        .header-container {
+            flex-direction: column;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .header-user-container {
+            margin-top: 10px;
+        }
+    }
+</style>
 
 <div class="header-container">
-
+    <!-- Логотип -->
     <a href="{% url 'home' %}">
-        <img src="{% static 'images/img1.png' %}" class="image-header" alt=“image”>
+        <img src="{% static 'images/img1.png' %}" class="image-header" alt="Logo">
     </a>
+
+    <!-- Блок сообщений -->
     <div>
         {% if messages %}
         <ul class="messages">
@@ -18,14 +100,14 @@
         </ul>
         {% endif %}
     </div>
-    <div class="header-user-contaner">
+
+    <!-- Информация о пользователе -->
+    <div class="header-user-container">
         {% if request.user.is_authenticated %}
-        Welcome, {{request.user.username}}
+        <p>Welcome, <strong>{{ request.user.username }}</strong></p>
         <p><a href="{% url 'logout' %}">Logout</a></p>
         {% else %}
         <p><a href="{% url 'login' %}">Login</a></p>
         {% endif %}
-
     </div>
-
 </div>
