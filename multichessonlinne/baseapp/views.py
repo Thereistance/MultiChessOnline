@@ -62,7 +62,7 @@ def roomsPage(request):
 @login_required(login_url='login')
 def roomPage(request,pk):
     room = Room.objects.get(id=pk)
-    room_messages = room.messages.order_by('-created_at')
+    room_messages = room.messages.order_by('created_at')
     if request.method == "POST":
         if request.user.is_authenticated:
             room_message = Message.objects.create(
