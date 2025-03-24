@@ -73,8 +73,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'multichessonlinne.wsgi.application'
-ASGI_APPLICATION = 'multichessonline.asgi.application'
+ASGI_APPLICATION = 'multichessonlinne.asgi.application'
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",  # Или Redis для продакшена
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases

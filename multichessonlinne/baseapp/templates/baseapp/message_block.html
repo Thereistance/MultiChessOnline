@@ -1,56 +1,80 @@
 <style>
-    .chat-container {
-          width: 100 px; /* Занимает половину ширины страницы */
-          margin: 0; /* Убираем все отступы */
-          padding: 20px;
-          border: 1px solid #ccc;
-          border-radius: 10px;
-          background-color: #f9f9f9;
-          box-sizing: border-box; /* Учитываем padding в ширине */
-      }
-  .message {
-      margin-bottom: 15px;
-      padding: 10px;
-      border-radius: 5px;
-      background-color: #fff;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
+   .chat-container {
+    width: 100%; /* Исправлено */
+    max-width: 500px; /* Добавлено ограничение */
+    height: 300px; /* Установлена высота */
+    margin: 10px auto; /* Центрирование */
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    box-sizing: border-box; 
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Добавлен скролл */
+}
 
-  .message .text {
-      font-size: 16px;
-      color: #333;
-  }
+.messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    max-height: 250px;
+}
 
-  .message .author {
-      font-size: 14px;
-      color: #777;
-      margin-top: 5px;
-  }
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
 
-  .message .author::before {
-      content: "by ";
-      color: #999;
-  }
+.message .text {
+    font-size: 16px;
+    color: #333;
+}
 
-  .form-container {
-      margin-top: 20px;
-      margin-right: 20px;
-  }
+.message .author {
+    font-size: 14px;
+    color: #777;
+    margin-top: 5px;
+}
 
-  .form-container input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 5px;
-      font-size: 16px;
-  }
+.message .author::before {
+    content: "by ";
+    color: #999;
+}
 
-  .form-container input[type="text"]::placeholder {
-      color: #999;
-  }
+.form-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.form-container input[type="text"] {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.form-container button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.form-container button:hover {
+    background-color: #0056b3;
+}
 </style>
 <div class="chat-container">
-    <div class="messages">
+    <div class="messages" id="messages_block">
         {% for message in room_messages %}
         <div class="message">
             <div class="text">{{ message.text }}</div>
@@ -59,10 +83,44 @@
         {% endfor %}
     </div>
 
-    <div class="form-container">
-        <form method="POST" action="">
-            {% csrf_token %}
-            <input type="text" name="body" placeholder="Write your message......">
+    <div class="form-container" >
+        <form id="form">
+            <input type="text" name="message" />
         </form>
     </div>
 </div>
+<script>
+    let url = `ws://${window.location.host}/ws/socket-server/`;
+    const chatSocket = new WebSocket(url);
+
+    chatSocket.onmessage = function (e) {
+    let data = JSON.parse(e.data);
+    console.log('Data:', data);
+
+    if (data.type === "chat") {
+        let messages = document.getElementById('messages_block');
+
+        let messageHTML = `
+            <div class="message">
+                <div class="text">${data.message}</div>
+                <div class="author">@${data.user}</div>
+            </div>
+        `;
+
+        messages.insertAdjacentHTML('beforeend', messageHTML);
+
+        // Автоматическая прокрутка вниз
+        messages.scrollTop = messages.scrollHeight;
+    }
+};
+    let form = document.getElementById('form')
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        let message = e.target.message.value
+        chatSocket.send(JSON.stringify({
+            'message': message
+        }))
+        form.reset()
+    })
+
+</script>
