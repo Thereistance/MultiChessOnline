@@ -1,5 +1,5 @@
 {% extends 'main.html' %}
-
+{% load static %}
 {% block content %}
 {% if request.user == game.player1 or request.user == game.player2 %}
 <h1>Game in Room: {{ game.room.name }}</h1>
@@ -8,4 +8,140 @@
 <p>Player 2: {{ game.player2.username }}</p>
 <p>Status: {% if game.is_active %}Active{% else %}Finished{% endif %}</p>
 {% endif %}
+
+
+<div class="chess-board-container">
+    <div class="board-letters-top" id="top-letters"></div>
+
+    <div class="board-with-numbers">
+        <div class="board-numbers-left" id="left-numbers"></div>
+
+        <div class="chess-board" id="chess-board"></div>
+
+        <div class="board-numbers-right" id="right-numbers"></div>
+    </div>
+
+    <div class="board-letters-bottom" id="bottom-letters"></div>
+</div>
+
+<script  src="{% static 'js/Chess_board.js' %}"> </script>
+
+<style>
+
+.name-of-the-game {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.title-text {
+    color: white;
+    text-shadow: 2px 2px 5px rgb(128, 128, 146);
+}
+.chess-square {
+    position: relative;
+    width: 60px;  /* или любой другой размер клетки */
+    height: 60px;
+}
+
+.piece {
+    width: 80%;   /* Фигуры будут занимать 80% клетки */
+    height: 80%;
+    position: absolute;
+    top: 10%;
+    left: 10%;
+    object-fit: contain;  /* Сохраняет пропорции */
+    pointer-events: none; /* Чтобы клики проходили сквозь изображение к клетке */
+}
+
+/* Для ферзя можно задать отдельный размер, если нужно */
+.piece[alt="q"], .piece[alt="Q"] {
+    width: 70%;
+    height: 70%;
+    top: 15%;
+    left: 15%;
+}
+.course-player{
+    display: flex;
+    background: gray;
+    padding: 10px;
+    border-radius: 20px;
+    position: absolute;
+    left: 780px;
+    top: 20px;
+}
+
+.course-player-field{
+    display: grid;
+    width: 240px;
+    height: 80px;
+    background: white;
+    border-radius: 20px;
+    align-items: center;
+    justify-content: center;
+}
+.chess-board-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: Arial, sans-serif;
+}
+
+.board-letters-top,
+.board-letters-bottom {
+    display: flex;
+    justify-content: space-around;
+    width: 400px;
+    margin-bottom: 5px;
+}
+
+.board-with-numbers {
+    display: flex;
+}
+
+.board-numbers-left,
+.board-numbers-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+    height: 400px;
+    margin-right: 5px;
+    margin-left: 5px;
+}
+
+.chess-board {
+    display: grid;
+    grid-template-columns: repeat(8, 50px);
+    grid-template-rows: repeat(8, 50px);
+    border: 2px solid #333;
+}
+
+.chess-square {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    cursor: pointer;
+}
+
+.white {
+    background-color: #f0d9b5;
+}
+
+.black {
+    background-color: #b58863;
+}
+
+.possible-move {
+    background-color: rgba(0, 255, 0, 0.3);
+}
+
+.selected {
+    background-color: rgba(255, 255, 0, 0.5);
+} 
+</style>
 {% endblock %}

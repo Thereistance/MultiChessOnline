@@ -1,6 +1,8 @@
 
 from django.contrib import admin
 from django.urls import path, include
+from django.conf.urls.static import static
+from django.conf import settings
 from . import views
 
 urlpatterns = [
@@ -16,4 +18,5 @@ urlpatterns = [
     path('start-game/<str:pk>/', views.startGame, name="start-game"),
     path('join-game/<str:pk>/', views.joinGame, name="join-game"),
     path('game/<str:pk>/', views.gamePage, name="game"),
-]
+] 
+# + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
