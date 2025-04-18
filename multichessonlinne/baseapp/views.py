@@ -125,7 +125,10 @@ def joinGame(request,pk):
 
 def gamePage(request,pk):
     game = Game.objects.get(id=pk)
-    context = {'game': game}
+    room = game.room
+    room_messages = room.messages.order_by('created_at')
+    # print(room_messages)
+    context = {'game': game, 'room' : room, 'room_messages': room_messages}
     return render(request, 'baseapp/game_page.html', context)
 
 @login_required(login_url='login')

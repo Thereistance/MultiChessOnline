@@ -91,6 +91,7 @@
 </div>
 <script>
     const roomId = "{{ room.id }}";
+    // console.log(roomId)
     let url = `ws://${window.location.host}/ws/room/${roomId}/`;
     const chatSocket = new WebSocket(url);
 

@@ -1,0 +1,602 @@
+{% extends 'main.html' %}
+{% load static %}
+{% block content %}
+<div id="chess-game" data-game_id="{{ game.id }}">
+    <div class="chess-game-container">
+        {% if request.user == game.player1 or request.user == game.player2 %}
+        <div class="game-header">
+            <h1>Игра в комнате: {{ game.room.name }}</h1>
+            <div class="player-info">
+                <div class="player-box player2">
+                    <span class="player-label">Чёрные:</span>
+                    <span class="player-name">{{ game.player2.username }}</span>
+                </div>
+                <div class="game-status">
+                    Статус: <span class="status-badge">{% if game.is_active %}Активна{% else %}Завершена{% endif %}</span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="chess-layout">
+            <div class="chess-main">
+                <div id="board-container" style="width: 480px"></div>
+            </div>
+
+            <div class="right-sidebar">
+                <div class="game-controls">
+                    <div class="current-turn" id="current-player"></div>
+                    <div class="game-state" id="game-status"></div>
+
+                    <div class="captured-pieces-container">
+                        <div class="captured-title">Съеденные фигуры:</div>
+                        <div class="captured-white">
+                            <span class="captured-label">Белые:</span>
+                            <span id="white-captured" class="captured-list"></span>
+                        </div>
+                        <div class="captured-black">
+                            <span class="captured-label">Чёрные:</span>
+                            <span id="black-captured" class="captured-list"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="message-block-container">
+                    {% include 'baseapp/message_block.html' %}
+                </div>
+            </div>
+        </div>
+
+        <div class="player-info">
+            <div class="player-box player1">
+                <span class="player-label">Белые:</span>
+                <span class="player-name">{{ game.player1.username }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Include required libraries -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/chessboard-js/1.0.0/chessboard-1.0.0.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chessboardjs/1.0.0/chessboard-1.0.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+
+<style>
+    .main-content {
+        background-color: #2a2a2a;
+    }
+
+    .chess-game-container {
+        max-width: auto;
+        padding: 20px;
+        background-color: #2a2a2a;
+        border-radius: 10px;
+        color: #e0e0e0;
+    }
+
+    .game-header {
+        text-align: center;
+        margin-bottom: 25px;
+    }
+
+    .game-header h1 {
+        color: #f0f0f0;
+        margin-bottom: 15px;
+    }
+
+    .player-info {
+        display: flex;
+        gap: 30px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    .player-box {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .player1 {
+        background-color: #3a3a3a;
+        border: 2px solid #b58863;
+        color: #f0d9b5;
+        justify-content: left;
+    }
+
+    .player2 {
+        background-color: #1a1a1a;
+        border: 2px solid #f0d9b5;
+        color: #b58863;
+        justify-content: left;
+    }
+
+    .player-label {
+        margin-right: 8px;
+    }
+
+    .game-status {
+        align-self: center;
+        color: #e0e0e0;
+    }
+
+    .status-badge {
+        background-color: #333;
+        padding: 5px 10px;
+        border-radius: 15px;
+        font-weight: bold;
+        color: #e0e0e0;
+    }
+
+    .chess-layout {
+        display: flex;
+        flex-direction: row;
+        gap: 30px;
+        align-items: flex-start;
+    }
+
+    @media (max-width: 1200px) {
+        .chess-layout {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .right-sidebar {
+            width: 100%;
+            margin-top: 30px;
+        }
+    }
+
+    .right-sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 30px;
+        min-width: 350px;
+    }
+
+    .game-controls {
+        padding: 20px;
+        background-color: #333;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        color: #e0e0e0;
+    }
+
+    .current-turn {
+        font-size: 1.3em;
+        font-weight: bold;
+        padding: 12px;
+        margin-bottom: 15px;
+        text-align: center;
+        border-radius: 5px;
+        background-color: #3a3a3a;
+    }
+
+    .player-white {
+        color: #f0d9b5;
+        border-left: 4px solid #f0d9b5;
+    }
+
+    .player-black {
+        color: #b58863;
+        border-left: 4px solid #b58863;
+    }
+
+    .game-state {
+        font-size: 1.2em;
+        padding: 12px;
+        margin-bottom: 20px;
+        text-align: center;
+        border-radius: 5px;
+    }
+
+    .status-normal {
+        background-color: #2a3a2a;
+        color: #8bc34a;
+    }
+
+    .status-check {
+        background-color: #3a2a2a;
+        color: #ff6b6b;
+        font-weight: bold;
+    }
+
+    .status-checkmate {
+        background-color: #5a1a1a;
+        color: #ff4444;
+        font-weight: bold;
+    }
+
+    .status-stalemate {
+        background-color: #3a3a2a;
+        color: #ffcc00;
+        font-weight: bold;
+    }
+
+    .captured-pieces-container {
+        margin-top: 25px;
+    }
+
+    .captured-title {
+        font-weight: bold;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #444;
+        font-size: 1.1em;
+    }
+
+    .captured-white,
+    .captured-black {
+        display: flex;
+        align-items: center;
+        margin: 8px 0;
+    }
+
+    .captured-label {
+        min-width: 70px;
+        font-weight: bold;
+    }
+
+    .captured-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+
+    .captured-piece {
+        width: 25px;
+        height: 25px;
+        filter: brightness(0.9);
+    }
+
+    .promotion-dialog-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+    }
+
+    .promotion-dialog {
+        background-color: #333;
+        padding: 25px;
+        border-radius: 8px;
+        text-align: center;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+        color: #e0e0e0;
+    }
+
+    .promotion-title {
+        margin-bottom: 20px;
+        font-weight: bold;
+        font-size: 1.3em;
+        color: #f0f0f0;
+    }
+
+    .promotion-options {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .promotion-option {
+        padding: 15px;
+        border: 1px solid #555;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background-color: #444;
+    }
+
+    .promotion-option:hover {
+        background-color: #555;
+        transform: translateY(-2px);
+    }
+
+    /* Стили для блока сообщений */
+    .message-block-container {
+        width: 100%;
+    }
+
+    .chat-container {
+        width: 100%;
+        height: 400px;
+        padding: 20px;
+        border-radius: 10px;
+        background-color: #333;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        color: #e0e0e0;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding-right: 10px;
+        margin-bottom: 15px;
+    }
+
+    .message {
+        margin-bottom: 15px;
+        padding: 10px;
+        border-radius: 5px;
+        background-color: #3a3a3a;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .message .text {
+        font-size: 16px;
+        color: #f0f0f0;
+    }
+
+    .message .author {
+        font-size: 14px;
+        color: #b58863;
+        margin-top: 5px;
+    }
+
+    .message .author::before {
+        content: "by ";
+        color: #999;
+    }
+
+    .form-container {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: auto;
+    }
+
+    .form-container input[type="text"] {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #555;
+        border-radius: 5px;
+        font-size: 16px;
+        background-color: #444;
+        color: #f0f0f0;
+    }
+
+    .form-container button {
+        padding: 10px 15px;
+        background-color: #b58863;
+        border: none;
+        color: white;
+        cursor: pointer;
+        border-radius: 5px;
+        transition: background-color 0.2s;
+    }
+
+    .form-container button:hover {
+        background-color: #9a6b4a;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const chessContainer = document.getElementById('chess-game');
+    if (!chessContainer) {
+        console.error('Chess container not found');
+        return;
+    }
+    
+    const gameId = chessContainer.dataset.game_id;
+    if (!gameId) {
+        console.error('Game ID not specified');
+        return;
+    }
+
+    // Initialize Chess.js game
+    const game = new Chess();
+    
+    // Initialize Chessboard.js
+    const board = Chessboard('board-container', {
+        pieceTheme: '/static/images/{piece}.png',
+        position: 'start',
+        draggable: true,
+        onDragStart: onDragStart,
+        onDrop: onDrop,
+        onSnapEnd: onSnapEnd
+    });
+    
+    // Initialize WebSocket connection
+    const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    const socket = io(`${protocol}${window.location.host}/game/${gameId}/`);
+    
+    // Game state
+    let playerColor = null;
+    let currentPlayer = 'white';
+    let capturedPieces = { white: [], black: [] };
+    
+    // Initialize the game
+    function initGame(data) {
+        playerColor = data.player_color;
+        currentPlayer = data.current_player;
+        
+        // Load the board position
+        game.load(data.fen || 'start');
+        board.position(game.fen());
+        
+        updateGameStatus();
+        updateCapturedPieces();
+    }
+    
+    // Update game status display
+    function updateGameStatus() {
+        const currentPlayerEl = document.getElementById('current-player');
+        const gameStatusEl = document.getElementById('game-status');
+        
+        if (game.isCheckmate()) {
+            gameStatusEl.textContent = 'Шах и мат!';
+            gameStatusEl.className = 'game-state status-checkmate';
+            currentPlayerEl.textContent = `Игра окончена`;
+        } 
+        else if (game.isDraw()) {
+            gameStatusEl.textContent = 'Ничья!';
+            gameStatusEl.className = 'game-state status-stalemate';
+            currentPlayerEl.textContent = `Игра окончена`;
+        } 
+        else if (game.isCheck()) {
+            gameStatusEl.textContent = 'Шах!';
+            gameStatusEl.className = 'game-state status-check';
+            currentPlayerEl.textContent = `Ход: ${currentPlayer === 'white' ? 'Белые' : 'Чёрные'}`;
+            currentPlayerEl.className = `current-turn player-${currentPlayer}`;
+        } 
+        else {
+            gameStatusEl.textContent = 'Игра продолжается';
+            gameStatusEl.className = 'game-state status-normal';
+            currentPlayerEl.textContent = `Ход: ${currentPlayer === 'white' ? 'Белые' : 'Чёрные'}`;
+            currentPlayerEl.className = `current-turn player-${currentPlayer}`;
+        }
+    }
+    
+    // Update captured pieces display
+    function updateCapturedPieces() {
+        const whiteCapturedEl = document.getElementById('white-captured');
+        const blackCapturedEl = document.getElementById('black-captured');
+        
+        whiteCapturedEl.innerHTML = capturedPieces.white.map(p => 
+            `<img src="/static/images/${p}.png" class="captured-piece" alt="${p}">`
+        ).join('');
+        
+        blackCapturedEl.innerHTML = capturedPieces.black.map(p => 
+            `<img src="/static/images/${p}.png" class="captured-piece" alt="${p}">`
+        ).join('');
+    }
+    
+    // Handle drag start
+    function onDragStart(source, piece, position, orientation) {
+        // Don't allow moves when it's not the player's turn
+        if ((playerColor === 'white' && piece.search(/^b/) !== -1) ||
+            (playerColor === 'black' && piece.search(/^w/) !== -1) ||
+            playerColor !== currentPlayer) {
+            return false;
+        }
+    }
+    
+    // Handle piece drop
+    function onDrop(source, target) {
+        // See if the move is legal
+        const move = game.move({
+            from: source,
+            to: target,
+            promotion: 'q' // Always promote to queen for simplicity
+        });
+        
+        // Illegal move
+        if (move === null) return 'snapback';
+        
+        // Check for captured piece
+        if (move.captured) {
+            const color = move.color === 'w' ? 'black' : 'white';
+            capturedPieces[color].push(move.captured);
+            updateCapturedPieces();
+        }
+        
+        // Update game state
+        currentPlayer = currentPlayer === 'white' ? 'black' : 'white';
+        updateGameStatus();
+        
+        // Send move to server
+        socket.emit('move', {
+            from: source,
+            to: target,
+            promotion: move.promotion,
+            fen: game.fen()
+        });
+    }
+    
+    // Handle snap end
+    function onSnapEnd() {
+        board.position(game.fen());
+    }
+    
+    // Show promotion dialog
+    function showPromotionDialog(source, target, callback) {
+        const overlay = document.createElement('div');
+        overlay.className = 'promotion-dialog-overlay';
+        
+        const dialog = document.createElement('div');
+        dialog.className = 'promotion-dialog';
+        
+        const title = document.createElement('div');
+        title.className = 'promotion-title';
+        title.textContent = 'Выберите фигуру для превращения:';
+        
+        const options = document.createElement('div');
+        options.className = 'promotion-options';
+        
+        const pieces = ['q', 'r', 'b', 'n'];
+        pieces.forEach(p => {
+            const option = document.createElement('div');
+            option.className = 'promotion-option';
+            
+            const img = document.createElement('img');
+            img.src = `/static/images/${playerColor === 'white' ? 'w' : 'b'}${p}.png`;
+            img.style.width = '50px';
+            img.style.height = '50px';
+            
+            option.appendChild(img);
+            option.addEventListener('click', () => {
+                document.body.removeChild(overlay);
+                callback(p);
+            });
+            
+            options.appendChild(option);
+        });
+        
+        dialog.appendChild(title);
+        dialog.appendChild(options);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+    }
+    
+    // Socket event handlers
+    socket.on('connect', () => {
+        console.log('Connected to WebSocket server');
+    });
+    
+    socket.on('disconnect', () => {
+        console.log('Disconnected from WebSocket server');
+        updateGameStatus('Соединение прервано', 'error');
+    });
+    
+    socket.on('game_init', (data) => {
+        console.log('Game initialized:', data);
+        initGame(data);
+    });
+    
+    socket.on('game_update', (data) => {
+        console.log('Game updated:', data);
+        
+        // Update game state
+        game.load(data.fen);
+        board.position(game.fen());
+        currentPlayer = data.current_player;
+        
+        // Update captured pieces if needed
+        if (data.captured) {
+            capturedPieces = data.captured;
+            updateCapturedPieces();
+        }
+        
+        updateGameStatus();
+    });
+    
+    socket.on('error', (error) => {
+        console.error('WebSocket error:', error);
+        updateGameStatus('Ошибка подключения', 'error');
+    });
+});
+</script>
+{% endblock %}
