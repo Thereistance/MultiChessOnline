@@ -20,19 +20,52 @@
 
     <div class="chess-layout">
         <div class="chess-main">
-            <div class="board-letters-top" id="top-letters"></div>
-
-            <div class="board-center">
-                <div class="board-numbers-left" id="left-numbers"></div>
-
-                <div class="chess-board-wrapper">
-                    <div class="chess-board" id="chess-board"></div>
-                </div>
-
-                <div class="board-numbers-right" id="right-numbers"></div>
+            <!-- Top letters (a-h) -->
+            <div class="board-letters" id="top-letters">
+                {% for letter in 'abcdefgh' %}
+                <span class="board-coord">{{ letter }}</span>
+                {% endfor %}
             </div>
 
-            <div class="board-letters-bottom" id="bottom-letters"></div>
+            <div class="board-center">
+                <!-- Left numbers (8-1) -->
+                <div class="board-numbers" id="left-numbers">
+                    {% for number in '87654321' %}
+                    <span class="board-coord">{{ number }}</span>
+                    {% endfor %}
+                </div>
+
+                <!-- Chess board -->
+                <div class="chess-board-wrapper">
+                    <div class="chess-board" id="chess-board">
+                        {% for row in '12345678' %}
+                        {% for col in 'abcdefgh' %}
+                        <div class="chess-square {% cycle 'white' 'black' as squarecolor %}" 
+                             data-row="{{ forloop.parentloop.counter0 }}" 
+                             data-col="{{ forloop.counter0 }}"
+                             data-coord="{{ col }}{{ row }}">
+                            <img class="piece" src="" alt="">
+                        </div>
+                        {% endfor %}
+                        {% cycle squarecolor %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Right numbers (8-1) -->
+                <div class="board-numbers" id="right-numbers">
+                    {% for number in '87654321' %}
+                    <span class="board-coord">{{ number }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Bottom letters (a-h) -->
+            <div class="board-letters" id="bottom-letters">
+                {% for letter in 'abcdefgh' %}
+                <span class="board-coord">{{ letter }}</span>
+                {% endfor %}
+            </div>
         </div>
 
         <div class="right-sidebar">
@@ -67,8 +100,6 @@
     </div>
 </div>
 </div>
-
-<!-- <script src="{% static 'js/Chess_board2.js' %}"></script> -->
 
 <style>
     .main-content {
@@ -172,8 +203,8 @@
         position: relative;
     }
 
-    .board-letters-top,
-    .board-letters-bottom {
+    /* Board coordinates styling */
+    .board-letters {
         display: flex;
         justify-content: space-around;
         width: 480px;
@@ -184,8 +215,7 @@
         font-size: 1.1em;
     }
 
-    .board-numbers-left,
-    .board-numbers-right {
+    .board-numbers {
         display: flex;
         flex-direction: column;
         justify-content: space-around;
@@ -197,6 +227,13 @@
         font-size: 1.1em;
     }
 
+    .board-coord {
+        display: inline-block;
+        width: 60px;
+        text-align: center;
+    }
+
+    /* Chess board styling */
     .chess-board {
         display: grid;
         grid-template-columns: repeat(8, 60px);
@@ -227,11 +264,9 @@
         width: 85%;
         height: 85%;
         object-fit: contain;
-        /* pointer-events: none;
-        user-select: none;
-        -webkit-tap-highlight-color: transparent; */
     }
 
+    /* Board interaction states */
     .selected {
         background-color: rgba(50, 120, 60, 0.7) !important;
     }
@@ -249,7 +284,7 @@
         background-color: rgba(200, 50, 50, 0.5) !important;
     }
 
-
+    /* Right sidebar styling */
     .right-sidebar {
         display: flex;
         flex-direction: column;
@@ -352,6 +387,7 @@
         filter: brightness(0.9);
     }
 
+    /* Promotion dialog */
     .promotion-dialog-overlay {
         position: fixed;
         top: 0;
@@ -401,7 +437,7 @@
         transform: translateY(-2px);
     }
 
-    /* Стили для блока сообщений */
+    /* Message block styling */
     .message-block-container {
         width: 100%;
     }

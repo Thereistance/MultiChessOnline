@@ -94,16 +94,31 @@ class GameConsumer(WebsocketConsumer):
                     "white": game.player1.username,
                     "black": game.player2.username
                 },
-                "moves": []
+                "moves": [],
+                "captured_pieces": {
+                    "white": [],
+                    "black": []
+                },
+                "status": "active",
+                "winner": None,
+                "move_count": 0,
+                "last_capture_or_pawn_move": 0
             }
 
-        # Отправка текущего состояния новому игроку
+        self.send_game_state()
+    def send_game_state(self):
+        game_state = game_states[self.game_id]
         self.send(text_data=json.dumps({
             "type": "game_init",
-            "board": game_states[self.game_id]["board"],
-            "current_player": game_states[self.game_id]["current_player"],
+            "board": game_state["board"],
+            "current_player": game_state["current_player"],
             "player_color": self.get_player_color(),
-            "moves": game_states[self.game_id]["moves"]
+            "moves": game_state["moves"],
+            "captured_pieces": game_state["captured_pieces"],
+            "status": game_state["status"],
+            "winner": game_state["winner"],
+            "move_count": game_state["move_count"],
+            "last_capture_or_pawn_move": game_state["last_capture_or_pawn_move"]
         }))
 
     def get_player_color(self):
@@ -120,6 +135,7 @@ class GameConsumer(WebsocketConsumer):
 
     def receive(self, text_data):
         data = json.loads(text_data)
+        # print(game_states[self.game_id])
         move_type = data.get("type")
 
         if move_type == "make_move":
@@ -127,43 +143,154 @@ class GameConsumer(WebsocketConsumer):
         elif move_type == "chat_message":
             self.handle_chat(data)
 
+    # def handle_move(self, data):
+    #     from_pos = data["from"]
+    #     to_pos = data["to"]
+    #     promotion = data.get("promotion")
+        
+    #     # Проверка прав игрока
+    #     if not self.is_player_turn():
+    #         self.send_error("Not your turn")
+    #         return
+
+    #     # Обновление состояния игры
+    #     game_state = game_states[self.game_id]
+    #     from_col, from_row = self.parse_position(from_pos)
+    #     to_col, to_row = self.parse_position(to_pos)
+
+    #     # Получаем фигуру, которая делает ход
+    #     piece = game_state["board"][from_row][from_col]
+    #     target_piece = game_state["board"][to_row][to_col]
+
+    #     # Обработка взятия фигуры
+    #     if target_piece:
+    #         # Определяем, кто кого съел
+    #         if piece.isupper():  # Белые съели черную фигуру
+    #             game_state["captured_pieces"]["black"].append(target_piece.lower())
+    #         else:  # Черные съели белую фигуру
+    #             game_state["captured_pieces"]["white"].append(target_piece.lower())
+
+    #     # Обработка взятия на проходе
+    #     if piece.lower() == 'p' and from_col != to_col and not target_piece:
+    #         # Определяем направление для взятия на проходе
+    #         direction = -1 if piece.isupper() else 1
+    #         captured_pawn_row = to_row - direction
+    #         captured_pawn = game_state["board"][captured_pawn_row][to_col]
+            
+    #         if captured_pawn and captured_pawn.lower() == 'p' and captured_pawn.isupper() != piece.isupper():
+    #             # Добавляем съеденную пешку в список
+    #             if piece.isupper():  # Белые съели черную пешку
+    #                 game_state["captured_pieces"]["black"].append('p')
+    #             else:  # Черные съели белую пешку
+    #                 game_state["captured_pieces"]["white"].append('p')
+                
+    #             # Удаляем съеденную пешку с доски
+    #             game_state["board"][captured_pawn_row][to_col] = ''
+
+    #     # Выполнение хода
+    #     game_state["board"][from_row][from_col] = ''
+
+    #     # Обработка превращения пешки
+    #     if promotion and piece.lower() == 'p' and to_row in [0, 7]:
+    #         game_state["board"][to_row][to_col] = promotion
+    #     else:
+    #         game_state["board"][to_row][to_col] = piece
+
+    #     # Смена игрока и сохранение хода
+    #     game_state["current_player"] = "black" if game_state["current_player"] == "white" else "white"
+    #     move_record = {
+    #         "from": from_pos,
+    #         "to": to_pos,
+    #         "player": self.user.username,
+    #         "promotion": promotion,
+    #         "captured": target_piece if target_piece else None
+    #     }
+    #     game_state["moves"].append(move_record)
+
+    #     # Отправка обновления всем участникам
+    #     async_to_sync(self.channel_layer.group_send)(
+    #         self.game_group_name,
+    #         {
+    #             "type": "game_update",
+    #             "board": game_state["board"],
+    #             "current_player": game_state["current_player"],
+    #             "move": move_record,
+    #             "user": self.user.username,
+    #             "captured_pieces": game_state["captured_pieces"]
+    #         }
+    #     )
     def handle_move(self, data):
+        game_state = game_states[self.game_id]
+        
+        if game_state["status"] != "active":
+            return self.send_error("Game already finished")
+
+        if not self.is_player_turn():
+            return self.send_error("Not your turn")
+
         from_pos = data["from"]
         to_pos = data["to"]
         promotion = data.get("promotion")
-        
-        # Проверка прав игрока
-        if not self.is_player_turn():
-            self.send_error("Not your turn")
-            return
+        is_checkmate = data.get("is_checkmate", False)
+        is_draw = data.get("is_draw", False)
 
-        # Обновление состояния игры
-        game_state = game_states[self.game_id]
         from_col, from_row = self.parse_position(from_pos)
         to_col, to_row = self.parse_position(to_pos)
 
-        # Выполнение хода
         piece = game_state["board"][from_row][from_col]
+        target_piece = game_state["board"][to_row][to_col]
+
+        # Обновляем счетчики ходов
+        game_state["move_count"] += 1
+        
+        # Сбрасываем счетчик при взятии или ходе пешки
+        if target_piece or piece.lower() == 'p':
+            game_state["last_capture_or_pawn_move"] = game_state["move_count"]
+
+        # Обработка взятия фигуры
+        if target_piece:
+            if piece.isupper():
+                game_state["captured_pieces"]["black"].append(target_piece.lower())
+            else:
+                game_state["captured_pieces"]["white"].append(target_piece.lower())
+
+        # Выполняем ход
         game_state["board"][from_row][from_col] = ''
-        print("\n",game_states[self.game_id])
-        # Обработка превращения пешки
         if promotion and piece.lower() == 'p' and to_row in [0, 7]:
             game_state["board"][to_row][to_col] = promotion
         else:
             game_state["board"][to_row][to_col] = piece
 
-        # Смена игрока и сохранение хода
+        # Проверяем условия окончания игры
+        if is_checkmate:
+            game_state["status"] = "checkmate"
+            game_state["winner"] = game_state["current_player"]
+            game = Game.objects.get(id=self.game_id)
+            game.is_active = False
+            game.winner = game.player1 if game_state["winner"] == "white" else game.player2
+            game.save()
+        elif is_draw or (game_state["move_count"] - game_state["last_capture_or_pawn_move"] >= 100):
+            game_state["status"] = "draw"
+            game = Game.objects.get(id=self.game_id)
+            game.is_active = False
+            game.save()
+
+        # Меняем игрока
         game_state["current_player"] = "black" if game_state["current_player"] == "white" else "white"
+
+        # Сохраняем ход
         move_record = {
             "from": from_pos,
             "to": to_pos,
             "player": self.user.username,
             "promotion": promotion,
-            # "timestamp": str(datetime.now())
+            "captured": target_piece,
+            "is_checkmate": is_checkmate,
+            "is_draw": is_draw
         }
         game_state["moves"].append(move_record)
 
-        # Отправка обновления всем участникам
+        # Отправляем обновление
         async_to_sync(self.channel_layer.group_send)(
             self.game_group_name,
             {
@@ -171,10 +298,14 @@ class GameConsumer(WebsocketConsumer):
                 "board": game_state["board"],
                 "current_player": game_state["current_player"],
                 "move": move_record,
-                "user": self.user.username
+                "captured_pieces": game_state["captured_pieces"],
+                "status": game_state["status"],
+                "winner": game_state["winner"],
+                "move_count": game_state["move_count"],
+                "last_capture_or_pawn_move": game_state["last_capture_or_pawn_move"]
             }
         )
-
+        
     def is_player_turn(self):
         game_state = game_states[self.game_id]
         player_color = self.get_player_color()
@@ -186,7 +317,7 @@ class GameConsumer(WebsocketConsumer):
             "board": event["board"],
             "current_player": event["current_player"],
             "move": event["move"],
-            "user": event["user"]
+            "captured_pieces": event["captured_pieces"]
         }))
 
     @staticmethod
@@ -194,101 +325,9 @@ class GameConsumer(WebsocketConsumer):
         col = ord(pos[0].lower()) - ord('a')
         row = 8 - int(pos[1])
         return col, row
-# class GameConsumer(WebsocketConsumer):
-#     def connect(self):
-#         self.game_id = self.scope["url_route"]["kwargs"]["game_id"]
-#         self.game_group_name = f"game_{self.game_id}"
-
-#         if self.scope["user"] == AnonymousUser():
-#             self.close()
-#             return
-
-#         async_to_sync(self.channel_layer.group_add)(
-#             self.game_group_name,
-#             self.channel_name
-#         )
-#         self.accept()
-
-#         # Если у игры еще нет состояния — создаем его
-#         if self.game_id not in game_states:
-#             game = Game.objects.get(id=self.game_id)
-#             # player1 = game.player1
-#             # player2 = game.player2
-#             game_states[self.game_id] = {
-#                 "board": [
-#                     ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-#                     ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-#                     ['', '', '', '', '', '', '', ''],
-#                     ['', '', '', '', '', '', '', ''],
-#                     ['', '', '', '', '', '', '', ''],
-#                     ['', '', '', '', '', '', '', ''],
-#                     ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-#                     ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-#                 ],
-#                 "current_player": "white",
-#                 "moves": []
-#             }
-
-#         # Отправляем клиенту текущее состояние доски
-#         self.send(text_data=json.dumps({
-#             "type": "init",
-#             "board": game_states[self.game_id]["board"],
-#             "current_player": game_states[self.game_id]["current_player"],
-#             "moves": game_states[self.game_id]["moves"]
-#         }))
-
-#     def disconnect(self, close_code):
-#         async_to_sync(self.channel_layer.group_discard)(
-#             self.game_group_name,
-#             self.channel_name
-#         )
-
-#     def receive(self, text_data):
-#         data = json.loads(text_data)
-#         move = data.get("move")
-#         from_pos = data.get("from")  # Например, "e2"
-#         to_pos = data.get("to")      # Например, "e4"
-
-#         if move and from_pos and to_pos:
-#             # Обновляем состояние доски
-#             from_col, from_row = self.parse_position(from_pos)
-#             to_col, to_row = self.parse_position(to_pos)
-            
-#             # Выполняем ход
-#             piece = game_states[self.game_id]["board"][from_row][from_col]
-#             game_states[self.game_id]["board"][from_row][from_col] = ''
-#             game_states[self.game_id]["board"][to_row][to_col] = piece
-            
-#             # Меняем текущего игрока
-#             game_states[self.game_id]["current_player"] = "black" if game_states[self.game_id]["current_player"] == "white" else "white"
-            
-#             # Добавляем ход в историю
-#             game_states[self.game_id]["moves"].append(move)
-
-#             # Шлём обновление всем клиентам комнаты
-#             async_to_sync(self.channel_layer.group_send)(
-#                 self.game_group_name,
-#                 {
-#                     "type": "game_update",
-#                     "board": game_states[self.game_id]["board"],
-#                     "current_player": game_states[self.game_id]["current_player"],
-#                     "move": move,
-#                     "user": self.scope["user"].username
-#                 }
-#             )
-
-#     def game_update(self, event):
-#         self.send(text_data=json.dumps({
-#             "type": "update",
-#             "board": event["board"],
-#             "current_player": event["current_player"],
-#             "move": event["move"],
-#             "user": event["user"]
-#         }))
     
-#     @staticmethod
-#     def parse_position(pos):
-#         """Конвертирует шахматную нотацию (например, 'e2') в индексы массива"""
-#         col = ord(pos[0].lower()) - ord('a')
-#         row = 8 - int(pos[1])  # Преобразуем в индексы массива (0-7)
-#         return col, row
+    def send_error(self, message):
+        self.send(text_data=json.dumps({
+            "type": "error",
+            "message": message
+        }))
