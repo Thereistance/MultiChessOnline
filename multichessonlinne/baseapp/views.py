@@ -32,17 +32,18 @@ def loginPage(request):
 def registerPage(request):
     form = UserCreationForm()
     if request.method == "POST":
-        user = UserCreationForm(request.POST)
-        if user.is_valid():
-            user = user.save(commit=False)
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
             user.username = user.username.lower()
             user.save()
-            login(request,user)
+            login(request, user)
+            Rating.objects.create(user=user)
             return redirect('home')
         else:
-            messages.error(request, "Error occured during registration")
-    context ={'form': form }
-    return render(request,'baseapp/register_page.html', context)
+            messages.error(request, "Error occurred during registration")
+    context = {'form': form}
+    return render(request, 'baseapp/register_page.html', context)
 
 
 def logoutPage(request):
@@ -58,23 +59,50 @@ def roomsPage(request):
     rooms = Room.objects.all()
     context = {'rooms': rooms}
     return render(request, 'baseapp/rooms_page.html', context)
-
+# @login_required(login_url='login')
+# def roomPage(request,pk):
+#     room = Room.objects.get(id=pk)
+#     room_messages = room.messages.order_by('created_at')
+#     if request.method == "POST":
+#         if request.user.is_authenticated:
+#             room_message = Message.objects.create(
+#                 user=request.user,
+#                 room = room,
+#                 text = request.POST.get('body')
+#             )
+#             return redirect('room', room.id)
+#     if not room.is_active:
+#         if room.game != NULL:
+            
+#             context = {'room': room,'room_messages': room_messages}
+#     else:
+#        return redirect('game',room.game.id)
+#     return render(request, 'baseapp/room.html', context)
 @login_required(login_url='login')
-def roomPage(request,pk):
+def roomPage(request, pk):
     room = Room.objects.get(id=pk)
     room_messages = room.messages.order_by('created_at')
+    
     if request.method == "POST":
         if request.user.is_authenticated:
             room_message = Message.objects.create(
                 user=request.user,
-                room = room,
-                text = request.POST.get('body')
+                room=room,
+                text=request.POST.get('body')
             )
             return redirect('room', room.id)
-    if not room.is_active:
-        context = {'room': room,'room_messages': room_messages}
-    else:
-       return redirect('game',room.game.id)
+    
+    # Проверяем, есть ли игра в комнате
+    if hasattr(room, 'game'):
+        # Если комната неактивна, но игра существует - перенаправляем на игру
+        if not room.is_active:
+            return redirect('game', room.game.id)
+        # Если комната активна (игра идет) - тоже перенаправляем на игру
+        else:
+            return redirect('game', room.game.id)
+    
+    # Если игры нет, просто отображаем комнату
+    context = {'room': room, 'room_messages': room_messages}
     return render(request, 'baseapp/room.html', context)
 
 # @login_required(login_url='login')
@@ -125,12 +153,38 @@ def joinGame(request,pk):
 
 def gamePage(request,pk):
     game = Game.objects.get(id=pk)
+    context = {'game': game}
+    if not game.is_active:
+        return render(request, 'baseapp/game_page_result.html', context)
     room = game.room
     room_messages = room.messages.order_by('created_at')
+    player1_rating = Rating.objects.get_or_create(user=game.player1)[0]
+    player2_rating = Rating.objects.get_or_create(user=game.player2)[0] if game.player2 else None
     # print(room_messages)
-    context = {'game': game, 'room' : room, 'room_messages': room_messages}
+    context = {'game': game, 'room' : room, 'room_messages': room_messages, "player1_rating":player1_rating, 'player2_rating': player2_rating}
     return render(request, 'baseapp/game_page2.html', context)
 
+def ratingPage(request):
+    ratings = Rating.objects.all().order_by('-score')  # Предполагается, что поле 'score' содержит очки
+    context = {
+        'ratings': ratings,
+    }
+    return render(request, 'baseapp/rating.html', context)
+
+def profilePage(request, pk):
+    user = User.objects.get(id=pk)
+    rating = Rating.objects.get(user=user)
+    games = Game.objects.filter(player1=user) | Game.objects.filter(player2=user)
+    games = games.order_by('-started_at')
+
+    context = {
+        'profile_user': user,
+        'rating': rating,
+        'games': games,
+    }
+
+    return render(request, 'baseapp/profile.html', context)
+    
 @login_required(login_url='login')
 def createRoom(request):
     form = RoomForm()

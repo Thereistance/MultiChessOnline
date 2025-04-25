@@ -2,9 +2,10 @@ import json
 from channels.generic.websocket import WebsocketConsumer
 from django.contrib.auth.models import AnonymousUser
 from asgiref.sync import async_to_sync
-from .models import Message, User, Room, Game
+from .models import Message, User, Room, Game, Rating
 from datetime import datetime
 from django.utils.timezone import now
+from django.db import transaction
 
 class ChatConsumer(WebsocketConsumer):
     def connect(self):
@@ -79,15 +80,25 @@ class GameConsumer(WebsocketConsumer):
         if self.game_id not in game_states:
             game = Game.objects.get(id=self.game_id)
             game_states[self.game_id] = {
-                "board": [
-                    ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-                    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-                    ['', '', '', '', '', '', '', ''],
-                    ['', '', '', '', '', '', '', ''],
-                    ['', '', '', '', '', '', '', ''],
-                    ['', '', '', '', '', '', '', ''],
-                    ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-                    ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+                # "board": 
+                # [
+                #     ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                #     ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                #     ['', '', '', '', '', '', '', ''],
+                #     ['', '', '', '', '', '', '', ''],
+                #     ['', '', '', '', '', '', '', ''],
+                #     ['', '', '', '', '', '', '', ''],
+                #     ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                #     ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+                # ],
+                "board": [['', '', '', 'Q', '', '', '', 'r'],
+                          ['', 'p', '', '', '', '', '', 'p'],
+                          ['', '', '', '', 'B', '', 'k', 'B'],
+                          ['p', '', 'p', 'P', '', '', 'p', ''],
+                          ['', 'n', 'P', 'P', '', '', '', ''],
+                          ['', '', '', '', '', '', 'P', ''],
+                          ['P', 'P', '', '', '', '', '', 'P'],
+                          ['R', 'N', '', '', 'K', '', 'N', 'R']
                 ],
                 "current_player": "white",
                 "players": {
@@ -120,7 +131,34 @@ class GameConsumer(WebsocketConsumer):
             "move_count": game_state["move_count"],
             "last_capture_or_pawn_move": game_state["last_capture_or_pawn_move"]
         }))
-
+    # def handle_game_end(self, data):
+    #     game_state = game_states[self.game_id]
+    #     game = Game.objects.get(id=self.game_id)
+        
+    #     if data.get("is_checkmate", False):
+    #         game_state["status"] = "checkmate"
+    #         game_state["winner"] = data["winner"]
+    #         game.is_active = False
+    #         game.winner = game.player1 if game_state["winner"] == "white" else game.player2
+    #         game.save()
+    #     elif data.get("is_draw", False):
+    #         game_state["status"] = "draw"
+    #         game.is_active = False
+    #         game.save()
+        
+    #     # Send update to all players
+    #     async_to_sync(self.channel_layer.group_send)(
+    #         self.game_group_name,
+    #         {
+    #             "type": "game_update",
+    #             "board": game_state["board"],
+    #             "current_player": game_state["current_player"],
+    #             "status": game_state["status"],
+    #             "winner": game_state["winner"],
+    #             "move_count": game_state["move_count"],
+    #             "last_capture_or_pawn_move": game_state["last_capture_or_pawn_move"]
+    #         }
+    #     )
     def get_player_color(self):
         game_state = game_states[self.game_id]
         if self.user.username == game_state["players"]["white"]:
@@ -132,14 +170,16 @@ class GameConsumer(WebsocketConsumer):
             self.game_group_name,
             self.channel_name
         )
-
+    
     def receive(self, text_data):
         data = json.loads(text_data)
-        # print(game_states[self.game_id])
+        print(data)
         move_type = data.get("type")
 
         if move_type == "make_move":
             self.handle_move(data)
+        elif move_type == "end_game":
+            self.handle_game_end(data)
         elif move_type == "chat_message":
             self.handle_chat(data)
 
@@ -262,19 +302,55 @@ class GameConsumer(WebsocketConsumer):
             game_state["board"][to_row][to_col] = piece
 
         # Проверяем условия окончания игры
+        # if is_checkmate:
+        #     game_state["status"] = "checkmate"
+        #     game_state["winner"] = game_state["current_player"]
+        #     game = Game.objects.get(id=self.game_id)
+        #     game.is_active = False
+        #     winner_user = game.player1 if game_state["winner"] == "white" else game.player2
+        #     game.winner = winner_user
+        #     game.save()
+        #     game.end_game()
+        # elif is_draw or (game_state["move_count"] - game_state["last_capture_or_pawn_move"] >= 100):
+        #     game_state["status"] = "draw"
+        #     game = Game.objects.get(id=self.game_id)
+        #     game.is_active = False
+        #     game.save()
         if is_checkmate:
             game_state["status"] = "checkmate"
             game_state["winner"] = game_state["current_player"]
-            game = Game.objects.get(id=self.game_id)
-            game.is_active = False
-            game.winner = game.player1 if game_state["winner"] == "white" else game.player2
-            game.save()
-        elif is_draw or (game_state["move_count"] - game_state["last_capture_or_pawn_move"] >= 100):
-            game_state["status"] = "draw"
-            game = Game.objects.get(id=self.game_id)
-            game.is_active = False
-            game.save()
 
+            game = Game.objects.get(id=self.game_id)
+            winner_color = "white" if game_state["winner"] == "white" else "black"
+            
+            # Получаем победителя и проигравшего
+            winner_user = game.player1 if winner_color == "white" else game.player2
+            loser_user = game.player2 if winner_user == game.player1 else game.player1
+
+            # ✨ Обновление рейтинга в транзакции
+            try:
+                with transaction.atomic():
+                    winner_rating, _ = Rating.objects.get_or_create(user=winner_user)
+                    loser_rating, _ = Rating.objects.get_or_create(user=loser_user)
+                    
+                    # Обновляем счет
+                    winner_rating.score += 10
+                    loser_rating.score = max(loser_rating.score - 10, 0)  # Защита от отрицательного рейтинга
+                    
+                    winner_rating.save()
+                    loser_rating.save()
+
+                    # Обновляем игру
+                    
+                    game.winner = winner_user
+                    game.is_active = False
+                    game.save()  # Save first
+                    game.end_game()  # Then call end_game
+            
+            except Exception as e:
+                # Логирование ошибки, если что-то пошло не так
+                print(f"Error during game result update: {e}")
+                
         # Меняем игрока
         game_state["current_player"] = "black" if game_state["current_player"] == "white" else "white"
 
@@ -301,20 +377,127 @@ class GameConsumer(WebsocketConsumer):
                 "captured_pieces": game_state["captured_pieces"],
                 "status": game_state["status"],
                 "winner": game_state["winner"],
+                "winner_user": winner_user.username,
                 "move_count": game_state["move_count"],
                 "last_capture_or_pawn_move": game_state["last_capture_or_pawn_move"]
             }
         )
         
+    # def handle_move(self, data):
+    #     game_state = game_states[self.game_id]
+        
+    #     # Применяем ход
+    #     from_pos = data["from"]
+    #     to_pos = data["to"]
+    #     from_col, from_row = self.parse_position(from_pos)
+    #     to_col, to_row = self.parse_position(to_pos)
+        
+    #     piece = game_state["board"][from_row][from_col]
+    #     target_piece = game_state["board"][to_row][to_col]
+        
+    #     # Обновляем доску
+    #     game_state["board"][from_row][from_col] = ''
+    #     game_state["board"][to_row][to_col] = piece
+        
+    #     # Обновляем счетчики и captured pieces
+    #     game_state["move_count"] += 1
+    #     if target_piece or piece.lower() == 'p':
+    #         game_state["last_capture_or_pawn_move"] = game_state["move_count"]
+    #         if target_piece:
+    #             if piece.isupper():
+    #                 game_state["captured_pieces"]["black"].append(target_piece.lower())
+    #             else:
+    #                 game_state["captured_pieces"]["white"].append(target_piece.lower())
+        
+    #     # Проверяем условия завершения игры из данных клиента
+    #     if data.get("is_checkmate", False):
+    #         game_state["status"] = "checkmate"
+    #         game_state["winner"] = data["current_player"]
+    #         game = Game.objects.get(id=self.game_id)
+    #         game.is_active = False
+    #         game.winner = game.player1 if game_state["winner"] == "white" else game.player2
+    #         game.save()
+    #     elif data.get("is_draw", False):
+    #         game_state["status"] = "draw"
+    #         game = Game.objects.get(id=self.game_id)
+    #         game.is_active = False
+    #         game.save()
+        
+    #     # Меняем текущего игрока
+    #     game_state["current_player"] = "black" if game_state["current_player"] == "white" else "white"
+        
+    #     # Отправляем обновление
+    #     async_to_sync(self.channel_layer.group_send)(
+    #         self.game_group_name,
+    #         {
+    #             "type": "game_end",
+    #             "board": game_state["board"],
+    #             "current_player": game_state["current_player"],
+    #             "status": game_state.get("status", "active"),
+    #             "winner": game_state.get("winner"),
+    #             "move_count": game_state["move_count"],
+    #             "last_capture_or_pawn_move": game_state["last_capture_or_pawn_move"],
+    #             "captured_pieces": game_state["captured_pieces"],
+    #             "is_check": data.get("is_check", False)
+    #         }
+    #     )    
+    # def handle_game_end(self, data):
+    #     game_state = game_states[self.game_id]
+        
+    #     if game_state["status"] != "active":
+    #         return self.send_error("Game already finished")
+
+    #     if not self.is_player_turn():
+    #         return self.send_error("Not your turn")
+        # game_state = game_states[self.game_id]
+        # game = Game.objects.get(id=self.game_id)
+        
+        # if data.get("is_checkmate", False):
+        #     game_state["status"] = "checkmate"
+        #     game_state["winner"] = data["winner"]
+        #     game.is_active = False
+        #     game.winner = game.player1 if game_state["winner"] == "white" else game.player2
+        #     game.save()
+        # elif data.get("is_draw", False):
+        #     game_state["status"] = "draw"
+        #     game.is_active = False
+        #     game.save()
+        
+        # # Send update to all players
+        # async_to_sync(self.channel_layer.group_send)(
+        #     self.game_group_name,
+        #     {
+        #         "type": "game_end",
+        #         "board": game_state["board"],
+        #         "current_player": game_state["current_player"],
+        #         "status": game_state["status"],
+        #         "winner": game_state["winner"],
+        #         "move_count": game_state["move_count"],
+        #         "last_capture_or_pawn_move": game_state["last_capture_or_pawn_move"]
+        #     }
+        # )
     def is_player_turn(self):
         game_state = game_states[self.game_id]
         player_color = self.get_player_color()
         return player_color == game_state["current_player"]
-
+    def game_end(self, event):
+        self.send(text_data=json.dumps({
+            "type": "game_end",
+            "board": event["board"],
+            "current_player": event["current_player"],
+            "status": event["status"],
+            "winner": event["winner"],
+            "winner_user": event['winner_user'],
+            "move_count": event["move_count"],
+            "last_capture_or_pawn_move": event["last_capture_or_pawn_move"]
+        }))
     def game_update(self, event):
         self.send(text_data=json.dumps({
             "type": "game_update",
             "board": event["board"],
+            "winner": event["winner"],
+            "winner_user": event["winner_user"],
+            "status": event["status"],
             "current_player": event["current_player"],
             "move": event["move"],
             "captured_pieces": event["captured_pieces"]

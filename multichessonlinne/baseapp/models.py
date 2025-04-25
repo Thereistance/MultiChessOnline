@@ -25,32 +25,35 @@ class Room(models.Model):
         return self.name    
 
 class Game(models.Model):
-    room = models.OneToOneField(Room, on_delete=models.CASCADE, related_name='game')
+    room = models.OneToOneField(Room, on_delete=models.SET_NULL, related_name='game', null=True)
     player1 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='games_as_player1')
     player2 = models.ForeignKey(User, on_delete=models.CASCADE, related_name='games_as_player2', null=True, blank=True)
     started_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     winner = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='won_games')
     is_active = models.BooleanField(default=True)
-    
+    status = models.CharField(max_length=25, null=True,blank=True)
+    room_name = models.CharField(max_length=255, null=True, blank=True)
     def __str__(self):
         return f"Game in {self.room.name}"
 
     def start_game(self):
         # Активируем комнату, когда игра начинается
-        self.room.is_active = True
-        self.room.save()
+        self.game.is_active = True
+        self.game.save()
 
     def end_game(self):
         # Деактивируем комнату, когда игра заканчивается
+        self.room_name = self.room.name
         self.room.is_active = False
         self.room.save()
         self.is_active = False
         self.finished_at = timezone.now()
         self.save()
+        self.room.delete()  # Удаляем комнату, но игра сохранится
 
     def __str__(self):
-        return f"Game in {self.room.name}"
+        return f"Game in {self.room.name if self.room else self.room_name or 'Unknown Room'}"
      
 class Message(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='messages')

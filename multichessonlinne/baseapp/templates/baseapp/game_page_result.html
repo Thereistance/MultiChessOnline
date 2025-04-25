@@ -1,0 +1,108 @@
+{% extends 'main.html' %}
+{% load static %}
+
+{% block content %}
+<style>
+    .result-container {
+        max-width: 900px;
+        margin: 30px auto;
+        background: #1a1a3d;
+        padding: 40px;
+        border-radius: 15px;
+        box-shadow: 0 0 20px rgba(0,255,255,0.2);
+        color: #fff;
+        text-align: center;
+    }
+
+    .game-status {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #ffd700;
+    }
+
+    .result {
+        display: flex;
+        justify-content: space-around;
+        margin-top: 40px;
+        font-size: 20px;
+    }
+
+    .result .player {
+        padding: 15px;
+        border-radius: 12px;
+        background: #282850;
+    }
+
+    .win {
+        color: #00ff88;
+        font-weight: bold;
+    }
+
+    .lose {
+        color: #ff4f6d;
+        font-weight: bold;
+    }
+
+    .chat-box {
+        margin-top: 30px;
+        background: #282850;
+        padding: 20px;
+        border-radius: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .message {
+        background-color: #38385e;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 8px;
+        color: #fff;
+    }
+
+    .message .user {
+        font-weight: bold;
+    }
+</style>
+
+<div class="result-container">
+    <h1>🎮 Результат игры</h1>
+
+    <div class="game-status">
+        {% if game.winner %}
+            Победитель: <span class="win">{{ game.winner.username }}</span>
+        {% else %}
+            Игра завершена вничью
+        {% endif %}
+    </div>
+
+    <div class="result">
+        <div class="player">
+            <h3>{{ game.player1.username }}</h3>
+            <p>Рейтинг: {{ player1_rating.score }}</p>
+            {% if game.winner == game.player1 %}
+                <span class="win">Победа</span>
+            {% else %}
+                <span class="lose">Поражение</span>
+            {% endif %}
+        </div>
+
+        {% if game.player2 %}
+            <div class="player">
+                <h3>{{ game.player2.username }}</h3>
+                <p>Рейтинг: {{ player2_rating.score }}</p>
+                {% if game.winner == game.player2 %}
+                    <span class="win">Победа</span>
+                {% else %}
+                    <span class="lose">Поражение</span>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="player">
+                <h3>Противник не был найден</h3>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock content %}

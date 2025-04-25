@@ -81,6 +81,14 @@
     .login-link a:hover {
         text-decoration: underline;
     }
+
+    /* Стиль для ошибок */
+    .errorlist {
+        color: red;
+        font-size: 14px;
+        margin-top: 5px;
+        text-align: left;
+    }
 </style>
 
 <!-- 🔹 Контейнер регистрации -->
@@ -89,7 +97,23 @@
 
     <form method="POST" action="">
         {% csrf_token %}
+        
+        <!-- Выводим ошибки формы -->
+        {% if form.errors %}
+            <div class="errorlist">
+                <ul>
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
+        <!-- Поля формы -->
         {{ form.as_p }}
+
         <input type="submit" value="Register" class="register-btn"/>
     </form>
 

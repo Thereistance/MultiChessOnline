@@ -13,11 +13,14 @@
     <div class="player-info opponent-info">
         {% if request.user == game.player1 %}
             <div class="player-box player2">
-                <span class="player-name">{{ game.player2.username }}</span>
+                <!-- <span class="player-name">{{ game.player2.username }}</span> -->
+                <span>{{player2_rating}}</span>
             </div>
         {% elif request.user == game.player2 %}
             <div class="player-box player1">
-                <span class="player-name">{{ game.player1.username }}</span>
+                <!-- <span class="player-name">{{ game.player1.username }}</span> -->
+                <span>{{player1_rating}}</span>
+
             </div>
         {% endif %}
         <div class="game-status">
@@ -553,6 +556,8 @@
         this.lastCaptureOrPawnMove = 0;
         this.gameStatus = 'active'; // 'active', 'checkmate', 'draw'
         this.winner = null;
+        this.isWhite = null;
+        this.winner_user = null;
 
 
         this.pieceImages = {
@@ -689,6 +694,7 @@
     }
   
     handleGameInit(data) {
+        console.log(data)
         if (!data.board || !data.player_color) {
             // console.error('Invalid game initialization data');
             return;
@@ -697,6 +703,8 @@
         this.playerColor = data.player_color;
         this.pieces = data.board;
         this.currentPlayer = data.current_player;
+        this.capturedPieces = data.captured_pieces
+        this.isWhite = this.playerColor === 'white' ? true: false 
         // console.log(`Player color: ${this.playerColor}, Current player: ${this.currentPlayer}`); // Добавьте лог
         this.updateGameStatus(
             this.isMyTurn() ? 'Ваш ход!' : 'Ожидаем хода соперника'
@@ -704,55 +712,318 @@
         this.renderBoard();
     }
 
-    handleGameUpdate(data) {
-        this.pieces = data.board;
-        this.currentPlayer = data.current_player;
-        this.lastMove = data.move;
+    // handleGameUpdate(data) {
+    //     this.pieces = data.board;
+    //     this.currentPlayer = data.current_player;
+    //     this.lastMove = data.move;
         
+    //     if (data.captured_pieces) {
+    //         this.capturedPieces = data.captured_pieces;
+    //         this.updateCapturedPiecesDisplay();
+    //     }
+    //     const isWhite = this.currentPlayer === 'white';
+    //     const opponentColor = isWhite ? 'black' : 'white';
+    //     const isCheck = this.isKingInCheck(this.pieces, opponentColor);
+    //     console.log('isKingInCheck:', this.isKingInCheck(board, color));
+    //     console.log('Possible moves:', moves);
+        
+    //     if (data.status) {
+    //         this.gameStatus = data.status;
+    //         this.winner = data.winner;
+    //         this.handleGameEnd();
+    //     }
+        
+    //     if (data.move_count !== undefined) {
+    //         this.moveCount = data.move_count;
+    //     }
+        
+    //     if (data.last_capture_or_pawn_move !== undefined) {
+    //         this.lastCaptureOrPawnMove = data.last_capture_or_pawn_move;
+    //     }
+        
+    //     this.deselectPiece();
+    //     this.updateGameStatus(
+    //         this.isMyTurn() ? 'Ваш ход!' : 'Ожидаем хода соперника'
+    //     );
+    //     this.renderBoard();
+    // }
+//     handleGameUpdate(data) {
+//     try {
+//         // 1. Обновляем состояние доски и текущего игрока
+//         this.pieces = data.board || this.pieces;
+//         this.currentPlayer = data.current_player || this.currentPlayer;
+//         this.lastMove = data.move || this.lastMove;
+
+//         // 2. Обновляем список съеденных фигур
+//         if (data.captured_pieces) {
+//             this.capturedPieces = data.captured_pieces;
+//             this.updateCapturedPiecesDisplay();
+//         }
+
+//         // 3. Обновляем счетчики ходов (для правила 50 ходов)
+//         if (data.move_count !== undefined) {
+//             this.moveCount = data.move_count;
+//         }
+//         if (data.last_capture_or_pawn_move !== undefined) {
+//             this.lastCaptureOrPawnMove = data.last_capture_or_pawn_move;
+//         }
+
+//         // 4. Проверяем состояние игры
+//         const currentColor = this.currentPlayer === 'white' ? 'white' : 'black';
+//         const opponentColor = currentColor === 'white' ? 'black' : 'white';
+
+//         // 4.1. Проверяем шах
+//         const isCheck = this.isKingInCheck(this.pieces, opponentColor);
+//         console.log('game-update')
+//         // 4.2. Проверяем мат
+//         if (isCheck) {
+//             console.log('isCheck')
+//             const isCheckmate = this.isCheckmate(this.pieces, opponentColor);
+//             if (isCheckmate) {
+//                 this.gameStatus = 'checkmate';
+//                 this.winner = currentColor;
+//                 this.handleGameEnd();
+//             }
+//         } 
+//         // 4.3. Проверяем пат
+//         else if (this.isStalemate(this.pieces, opponentColor)) {
+//             this.gameStatus = 'draw';
+//             this.winner = null;
+//             this.handleGameEnd();
+//         }
+//         // 4.4. Проверяем ничью по правилу 50 ходов
+//         else if (this.moveCount - this.lastCaptureOrPawnMove >= 50) {
+//             this.gameStatus = 'draw';
+//             this.winner = null;
+//             this.handleGameEnd();
+//         }
+
+//         // 5. Обновляем отображение доски
+//         this.deselectPiece();
+//         this.updateGameStatus(
+//             this.isMyTurn() ? 'Ваш ход!' : 'Ожидаем хода соперника',
+//             isCheck ? 'check' : 'normal'
+//         );
+//         this.renderBoard();
+
+//         // 6. Обновляем информацию о текущем игроке
+//         this.updateCurrentPlayerDisplay();
+
+//         // 7. Логирование для отладки
+//         // console.log('Game updated:', {
+//         //     currentPlayer: this.currentPlayer,
+//         //     isCheck,
+//         //     gameStatus: this.gameStatus,
+//         //     winner: this.winner
+//         // });
+
+//     } catch (error) {
+//         console.error('Error in handleGameUpdate:', error);
+//         this.updateGameStatus('Ошибка обновления игры', 'error');
+//     }
+// }
+handleGameUpdate(data) {
+    try {
+        console.log(data)
+        // 1. Обновляем состояние доски и текущего игрока
+        this.pieces = data.board || this.pieces;
+        this.currentPlayer = data.current_player || this.currentPlayer;
+        this.isWhite = data.currentPlayer === 'White' ? true : false;
+        this.lastMove = data.move || this.lastMove;
+        this.winner = data.winner
+        this.winner_user = data.winner_user
+        this.gameStatus = data.status
+        // 2. Обновляем список съеденных фигур
         if (data.captured_pieces) {
             this.capturedPieces = data.captured_pieces;
             this.updateCapturedPiecesDisplay();
         }
-        
-        if (data.status) {
-            this.gameStatus = data.status;
-            this.winner = data.winner;
-            this.handleGameEnd();
-        }
-        
+
+        // 3. Обновляем счетчики ходов
         if (data.move_count !== undefined) {
             this.moveCount = data.move_count;
         }
-        
         if (data.last_capture_or_pawn_move !== undefined) {
             this.lastCaptureOrPawnMove = data.last_capture_or_pawn_move;
         }
+
+        // 4. Определяем, кто только что сделал ход (противник текущего игрока)
+        const justMovedColor = this.currentPlayer === 'white' ? 'black' : 'white';
         
+        // // 5. Проверяем шах для текущего игрока (чтобы увидеть, поставил ли противник шах)
+        const isCheck = this.isKingInCheck(this.pieces, this.isWhite);
+        // console.log('ischeck', isCheck)
+        // 6. Проверяем конечные состояния игры для игрока, который только что сделал ход
+        if (this.gameStatus == "checkmate") {
+            this.handleGameEnd();
+
+        } else if (this.gameStatus == "draw") {
+            this.winner = null;
+            this.handleGameEnd();
+        } else if (this.moveCount - this.lastCaptureOrPawnMove >= 50) {
+            this.winner = null;
+            this.handleGameEnd();
+        }
+
         this.deselectPiece();
-        this.updateGameStatus(
-            this.isMyTurn() ? 'Ваш ход!' : 'Ожидаем хода соперника'
+        if (this.gameStatus == 'active'){
+            this.updateGameStatus(
+            this.isMyTurn() ? 'Ваш ход!' : 'Ожидаем хода соперника',
+            isCheck ? 'check' : 'normal'
         );
+        }
+
         this.renderBoard();
+        this.updateCurrentPlayerDisplay();
+
+    } catch (error) {
+        console.error('Error in handleGameUpdate:', error);
+        this.updateGameStatus('Ошибка обновления игры', 'error');
     }
+}
+updateCurrentPlayerDisplay() {
+    const element = document.getElementById('current-player');
+    if (element) {
+        if (this.gameStatus !== 'active') {
+            element.textContent = '';
+            return;
+        }
+        element.textContent = `Сейчас ходят: ${this.currentPlayer === 'white' ? 'Белые' : 'Чёрные'}`;
+        element.className = this.currentPlayer === 'white' ? 'player-white' : 'player-black';
+    }
+}
+    // 
     handleGameEnd() {
+    let statusMessage = '';
+    let statusClass = '';
+
+    switch (this.gameStatus) {
+        case 'checkmate':
+            statusMessage = this.playerColor === this.winner 
+                ? 'Вы победили! Мат!' 
+                : 'Вы проиграли. Мат!';
+            statusClass = 'checkmate';
+            
+            // // Send game end message to server
+            // if (this.socket.readyState === WebSocket.OPEN) {
+            //     this.socket.send(JSON.stringify({
+            //         type: "end_game",
+            //         move_type: "end_game",
+            //         is_checkmate: true,
+            //         winner: this.winner
+            //     }));
+            // }
+           break;
+            
+        case 'draw':
+            statusMessage = 'Игра завершена вничью';
+            statusClass = 'stalemate';
+            
+            // // Send game end message to server
+            // if (this.socket.readyState === WebSocket.OPEN) {
+            //     this.socket.send(JSON.stringify({
+            //         type: "end_game",
+            //         move_type: "end_game",
+            //         is_draw: true
+            //     }));
+            // }
+            break;
+            
+        default:
+            statusMessage = 'Игра завершена';
+            statusClass = 'normal';
+    }
+
+    this.updateGameStatus(statusMessage, statusClass);
+    this.gameOver = true;
+
+    // Block the board
+    const chessBoard = document.getElementById('chess-board');
+    if (chessBoard) {
+        chessBoard.style.pointerEvents = 'none';
+    }
+
+    this.showGameOverUI();
+}
+showGameOverUI() {
+    const gameControls = document.querySelector('.game-controls');
+    if (gameControls) {
+        const gameOverDiv = document.createElement('div');
+        gameOverDiv.className = 'game-over-message';
+        
         if (this.gameStatus === 'checkmate') {
-            if (this.playerColor === this.winner) {
-                this.updateGameStatus('Вы победили! Мат!', 'checkmate');
-            } else {
-                this.updateGameStatus('Вы проиграли. Мат!', 'checkmate');
-            }
-            this.gameOver = true;
-        } 
-        else if (this.gameStatus === 'draw') {
-            this.updateGameStatus('Игра завершена вничью', 'stalemate');
-            this.gameOver = true;
+            gameOverDiv.innerHTML = `
+                <h2>${this.playerColor === this.winner ? 'Победа!' : 'Поражение!'}</h2>
+                <p>${this.playerColor === this.winner ? 'Вы поставили мат!' : 'Вам поставили мат!'}</p>
+            `;
+        } else {
+            gameOverDiv.innerHTML = `<h2>Ничья!</h2><p>${this.getDrawReason()}</p>`;
         }
         
-        // Блокируем доску
-        if (this.gameOver) {
-            document.getElementById('chess-board').style.pointerEvents = 'none';
+        const newGameBtn = document.createElement('button');
+        newGameBtn.textContent = 'Новая игра';
+        newGameBtn.addEventListener('click', () => window.location.reload());
+        
+        gameOverDiv.appendChild(newGameBtn);
+        gameControls.appendChild(gameOverDiv);
+    }
+}
+getDrawReason() {
+    if (this.moveCount - this.lastCaptureOrPawnMove >= 50) {
+        return 'Правило 50 ходов';
+    }
+    if (this.isInsufficientMaterial()) {
+        return 'Недостаток материала';
+    }
+    return 'Патовая ситуация';
+}
+
+isInsufficientMaterial() {
+    let whitePieces = [];
+    let blackPieces = [];
+    
+    // Собираем все фигуры
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const piece = this.pieces[row][col];
+            if (piece) {
+                if (piece === piece.toUpperCase()) {
+                    whitePieces.push(piece.toLowerCase());
+                } else {
+                    blackPieces.push(piece.toLowerCase());
+                }
+            }
         }
     }
+    
+    // Только короли
+    if (whitePieces.length === 1 && blackPieces.length === 1) {
+        return true;
+    }
+    
+    // Король + слон/конь против короля
+    if ((whitePieces.length === 1 && blackPieces.length === 2 && 
+         ['b', 'n'].includes(blackPieces[1])) ||
+        (blackPieces.length === 1 && whitePieces.length === 2 && 
+         ['b', 'n'].includes(whitePieces[1]))) {
+        return true;
+    }
+    
+    // Оба имеют только короля + слона, причем слоны одного цвета
+    if (whitePieces.length === 2 && whitePieces.includes('b') &&
+        blackPieces.length === 2 && blackPieces.includes('b')) {
+        const whiteBishopSquare = this.findPiece('B');
+        const blackBishopSquare = this.findPiece('b');
+        
+        if ((whiteBishopSquare.row + whiteBishopSquare.col) % 2 === 
+            (blackBishopSquare.row + blackBishopSquare.col) % 2) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
     isMyTurn() {
         return this.playerColor === this.currentPlayer;
     }
@@ -805,6 +1076,9 @@
         
         if (this.selectedPiece && this.selectedPiece.row === row && this.selectedPiece.col === col) {
             square.classList.add('selected');
+        }
+        if (this.capturedPieces) {
+            this.updateCapturedPiecesDisplay();
         }
         
         const move = this.possibleMoves.find(m => m.row === row && m.col === col);
@@ -898,28 +1172,156 @@
         this.deselectPiece();
     }
 
-    sendMove(from, to, promotion = null) {
-        // Проверяем условия окончания игры перед отправкой хода
-        const isCheckmate = this.isCheckmate(this.pieces, this.currentPlayer === 'white' ? 'black' : 'white');
-        const isDraw = this.moveCount - this.lastCaptureOrPawnMove >= 100;
-        
-        if (this.socket.readyState === WebSocket.OPEN) {
-            this.socket.send(JSON.stringify({
-                type: "make_move",
-                from,
-                to,
-                promotion,
-                is_checkmate: isCheckmate,
-                is_draw: isDraw
-            }));
-        }
-    }
+    // sendMove(from, to, promotion = null) {
+    //     // Проверяем условия окончания игры перед отправкой хода
+    //     const isCheckmate = this.isCheckmate(this.pieces, this.currentPlayer);
+    //     const isDraw = this.moveCount - this.lastCaptureOrPawnMove >= 100;
+    //     console.log('sendMove')
+    //     console.log(isCheckmate,isDraw)
+    //     if (this.socket.readyState === WebSocket.OPEN) {
+    //         this.socket.send(JSON.stringify({
+    //             type: "make_move",
+    //             from,
+    //             to,
+    //             promotion,
+    //             is_checkmate: isCheckmate,
+    //             is_draw: isDraw
+    //         }));
+    //     }
+    // }
 
     toChessNotation(row, col) {
         const letter = String.fromCharCode(97 + col);
         const number = 8 - row;
         return `${letter}${number}`;
     }
+//     sendMove(from, to, promotion = null) {
+//     // Создаем временную копию доски для проверки
+//     const tempBoard = this.copyBoard();
+//     const fromPos = this.parseChessNotation(from);
+//     const toPos = this.parseChessNotation(to);
+    
+//     // Применяем ход на временной доске
+//     const movingPiece = tempBoard[fromPos.row][fromPos.col];
+//     tempBoard[fromPos.row][fromPos.col] = '';
+//     tempBoard[toPos.row][toPos.col] = movingPiece;
+    
+//     // Определяем цвет текущего игрока и противника
+//     const currentColor = this.playerColor;
+//     const opponentColor = currentColor === 'white' ? 'black' : 'white';
+    
+    
+//     // Проверяем, находится ли король противника под шахом после этого хода
+//     const isCheck = this.isKingInCheck(tempBoard, !this.isWhite);
+    
+//     // Если шах - проверяем мат
+//     let isCheckmate = false;
+//     if (isCheck) {
+//         isCheckmate = this.isCheckmate(tempBoard, opponentColor);
+//     }
+    
+//     // Проверка на ничью (правило 50 ходов)
+//     const isDraw = this.moveCount - this.lastCaptureOrPawnMove >= 50;
+//     console.log('Send move:',isCheck,isCheckmate)
+//     if (this.socket.readyState === WebSocket.OPEN) {
+//         this.socket.send(JSON.stringify({
+//             type: "make_move",
+//             from,
+//             to,
+//             promotion,
+//             is_check: isCheck,       // Отправляем информацию о шахе
+//             is_checkmate: isCheckmate, // Отправляем информацию о мате
+//             is_draw: isDraw,         // Отправляем информацию о ничье
+//             current_player: this.playerColor // Отправляем текущего игрока
+//         }));
+//     }
+    
+//     // Если мат - обрабатываем завершение игры
+//     if (isCheckmate) {
+//         this.gameStatus = 'checkmate';
+//         this.winner = this.playerColor;
+//         this.handleGameEnd();
+//     } else if (isDraw) {
+//         this.gameStatus = 'draw';
+//         this.handleGameEnd();
+//     }
+// }
+sendMove(from, to, promotion = null) {
+    // console.group('sendMove');
+    // console.log(`Move from ${from} to ${to}, promotion: ${promotion}`);
+    
+    const tempBoard = this.copyBoard();
+    const fromPos = this.parseChessNotation(from);
+    const toPos = this.parseChessNotation(to);
+    
+    // console.log('From position:', fromPos);
+    // console.log('To position:', toPos);
+    
+    // Применяем ход
+    const movingPiece = tempBoard[fromPos.row][fromPos.col];
+    tempBoard[fromPos.row][fromPos.col] = '';
+    tempBoard[toPos.row][toPos.col] = movingPiece;
+    
+    // console.log('Temp board after move:');
+    // console.table(tempBoard);
+    
+    const isCurrentPlayerWhite = this.playerColor === 'white';
+    const isOpponentWhite = !isCurrentPlayerWhite;
+    
+    // console.log('Current player is white?', isCurrentPlayerWhite);
+    // console.log('Opponent is white?', isOpponentWhite);
+    
+    // Проверяем шах
+    const isCheck = this.isKingInCheck(tempBoard, isOpponentWhite);
+    // console.log('Is opponent in check?', isCheck);
+    
+    // Проверяем мат
+    let isCheckmate = false;
+    if (isCheck) {
+        isCheckmate = this.isCheckmate(tempBoard, isOpponentWhite);
+        // console.log('Is opponent in checkmate?', isCheckmate);
+    }
+    
+    // Проверка на ничью
+    const isDraw = this.moveCount - this.lastCaptureOrPawnMove >= 50;
+    // console.log('Is draw by 50 moves rule?', isDraw);
+    
+    // Отправка на сервер
+    if (this.socket.readyState === WebSocket.OPEN) {
+        console.log('Sending move to server');
+        this.socket.send(JSON.stringify({
+            type: "make_move",
+            from,
+            to,
+            promotion,
+            is_check: isCheck,
+            is_checkmate: isCheckmate,
+            is_draw: isDraw,
+            current_player: this.playerColor
+        }));
+    }
+    
+    // Обработка конечных состояний
+    // if (isCheckmate) {
+    //     // console.log('Checkmate detected!');
+    //     this.gameStatus = 'checkmate';
+    //     this.winner = this.playerColor;
+    //     // this.handleGameEnd();
+    // } else if (isDraw) {
+    //     // console.log('Draw detected!');
+    //     this.gameStatus = 'draw';
+    //     // this.handleGameEnd();
+    // }
+    
+    console.groupEnd();
+}
+
+// Вспомогательная функция для преобразования шахматной нотации
+parseChessNotation(pos) {
+    const col = pos.charCodeAt(0) - 'a'.charCodeAt(0);
+    const row = 8 - parseInt(pos[1]);
+    return { row, col };
+}
 
     updateGameStatus(message, type = 'normal') {
         const statusElement = document.getElementById('game-status');
@@ -1163,7 +1565,7 @@ getPawnMoves(row, col, piece, ignoreCheck = false) {
     }
 
     getKingMoves(row, col, piece, ignoreCheck = false) {
-    console.log(`Calculating king moves for ${piece} at [${row},${col}]`);
+    // console.log(`Calculating king moves for ${piece} at [${row},${col}]`);
     const moves = [];
     const isWhite = piece === 'K';
     const directions = [
@@ -1180,16 +1582,16 @@ getPawnMoves(row, col, piece, ignoreCheck = false) {
 
         // Check board boundaries
         if (newRow < 0 || newRow >= 8 || newCol < 0 || newCol >= 8) {
-            console.log(`[${newRow},${newCol}] - out of bounds`);
+            // console.log(`[${newRow},${newCol}] - out of bounds`);
             continue;
         }
 
         const targetPiece = this.pieces[newRow][newCol];
-        console.log(`Checking [${newRow},${newCol}] with piece ${targetPiece}`);
+        // console.log(`Checking [${newRow},${newCol}] with piece ${targetPiece}`);
 
         // Skip squares with own pieces
         if (targetPiece && this.isSameColor(piece, targetPiece)) {
-            console.log(`[${newRow},${newCol}] - own piece`);
+            // console.log(`[${newRow},${newCol}] - own piece`);
             continue;
         }
 
@@ -1200,7 +1602,7 @@ getPawnMoves(row, col, piece, ignoreCheck = false) {
 
         // For captures - check if the square is attacked by another piece
         if (targetPiece) {
-            console.log(`[${newRow},${newCol}] - capture move, checking for attackers`);
+            // console.log(`[${newRow},${newCol}] - capture move, checking for attackers`);
             let squareUnderAttack = false;
             
             // Check all enemy pieces that could attack this square
@@ -1209,10 +1611,10 @@ getPawnMoves(row, col, piece, ignoreCheck = false) {
                     const enemyPiece = tempBoard[r][c];
                     if (enemyPiece && !this.isSameColor(piece, enemyPiece)) {
                         const enemyMoves = this.getRawMovesForPiece(r, c, enemyPiece, true);
-                        console.log(`Checking enemy ${enemyPiece} at [${r},${c}] - moves:`, enemyMoves);
+                        // console.log(`Checking enemy ${enemyPiece} at [${r},${c}] - moves:`, enemyMoves);
                         
                         if (enemyMoves.some(m => m.row === newRow && m.col === newCol)) {
-                            console.log(`[${newRow},${newCol}] - under attack by ${enemyPiece} at [${r},${c}]`);
+                            // console.log(`[${newRow},${newCol}] - under attack by ${enemyPiece} at [${r},${c}]`);
                             squareUnderAttack = true;
                         }
                     }
@@ -1220,14 +1622,14 @@ getPawnMoves(row, col, piece, ignoreCheck = false) {
             }
 
             if (squareUnderAttack) {
-                console.log(`[${newRow},${newCol}] - SKIPPING - square under attack after capture`);
+                // console.log(`[${newRow},${newCol}] - SKIPPING - square under attack after capture`);
                 continue;
             }
         }
 
         // Check if new position is safe
         const isAttacked = this.isSquareAttacked(newRow, newCol, !isWhite, tempBoard);
-        console.log(`[${newRow},${newCol}] - isAttacked: ${isAttacked}`);
+        // console.log(`[${newRow},${newCol}] - isAttacked: ${isAttacked}`);
         
         if (!isAttacked) {
             moves.push({
@@ -1235,15 +1637,15 @@ getPawnMoves(row, col, piece, ignoreCheck = false) {
                 col: newCol,
                 isCapture: !!targetPiece
             });
-            console.log(`[${newRow},${newCol}] - ADDED as valid move`);
+            // console.log(`[${newRow},${newCol}] - ADDED as valid move`);
         } else {
-            console.log(`[${newRow},${newCol}] - SKIPPING - square under attack`);
+            // console.log(`[${newRow},${newCol}] - SKIPPING - square under attack`);
         }
     }
 
     // 2. Check castling (if king not in check and not ignoring checks)
     if (!ignoreCheck && !this.isKingInCheck(this.pieces, isWhite)) {
-        console.log('Checking castling possibilities');
+        // console.log('Checking castling possibilities');
         const color = isWhite ? 'white' : 'black';
         const backRank = isWhite ? 7 : 0;
 
@@ -1267,7 +1669,7 @@ getPawnMoves(row, col, piece, ignoreCheck = false) {
                         isCastling: true,
                         type: color.toUpperCase() + '_KINGSIDE'
                     });
-                    console.log('Added kingside castling');
+                    // console.log('Added kingside castling');
                 }
             }
 
@@ -1290,13 +1692,13 @@ getPawnMoves(row, col, piece, ignoreCheck = false) {
                         isCastling: true,
                         type: color.toUpperCase() + '_QUEENSIDE'
                     });
-                    console.log('Added queenside castling');
+                    // console.log('Added queenside castling');
                 }
             }
         }
     }
 
-    console.log('Final king moves:', moves);
+    // console.log('Final king moves:', moves);
     return moves;
 }
 
@@ -1392,14 +1794,34 @@ getPawnMoves(row, col, piece, ignoreCheck = false) {
     return validMoves;
 }
 
+// isKingInCheck(board, isWhite) {
+//     const kingSymbol = isWhite ? 'K' : 'k';
+//     const kingPos = this.findKingInBoard(board, isWhite);
+//     // console.log(this.pieces)
+//     if (!kingPos) return false;
+//     let bolisSquareAttacked = this.isSquareAttacked(kingPos.row, kingPos.col, !isWhite, board);
+//     // console.log(bolisSquareAttacked)
+//     return bolisSquareAttacked;
+// }
 isKingInCheck(board, isWhite) {
-    // console.log()
+    // console.group('isKingInCheck');
+    // console.log('Checking for', isWhite ? 'white' : 'black', 'king');
+    // console.table(board);
+    
+    const kingSymbol = isWhite ? 'K' : 'k';
     const kingPos = this.findKingInBoard(board, isWhite);
-    // console.log(kingPos)
-    if (!kingPos) return false;
-    let kingbool = this.isSquareAttacked(kingPos.row, kingPos.col, !isWhite, board);
-    console.log(kingbool)
-    return kingbool;
+    // console.log('King position:', kingPos);
+    
+    if (!kingPos) {
+        // console.log('King not found!');
+        // console.groupEnd();
+        return false;
+    }
+    
+    const isAttacked = this.isSquareAttacked(kingPos.row, kingPos.col, !isWhite, board);
+    // console.log('Is king attacked:', isAttacked);
+    // console.groupEnd();
+    return isAttacked;
 }
 findKingInBoard(board, isWhite) {
     const kingSymbol = isWhite ? 'K' : 'k';
@@ -1470,35 +1892,35 @@ isBetween(kingPos, attackerPos, row, col) {
     
     return false;
 }
-canBlockCheck(kingPos, attackerPos, move, isWhite) {
-    const attackerPiece = this.pieces[attackerPos.row][attackerPos.col].toLowerCase();
+// canBlockCheck(kingPos, attackerPos, move, isWhite) {
+//     const attackerPiece = this.pieces[attackerPos.row][attackerPos.col].toLowerCase();
     
-    // Конь атакует - нельзя блокировать, только взять
-    if (attackerPiece === 'n') return false;
+//     // Конь атакует - нельзя блокировать, только взять
+//     if (attackerPiece === 'n') return false;
     
-    // Определяем направление атаки
-    const dr = attackerPos.row - kingPos.row;
-    const dc = attackerPos.col - kingPos.col;
+//     // Определяем направление атаки
+//     const dr = attackerPos.row - kingPos.row;
+//     const dc = attackerPos.col - kingPos.col;
     
-    // Если атака по диагонали или прямой
-    if (Math.abs(dr) === Math.abs(dc) || dr === 0 || dc === 0) {
-        const stepR = dr === 0 ? 0 : dr > 0 ? 1 : -1;
-        const stepC = dc === 0 ? 0 : dc > 0 ? 1 : -1;
+//     // Если атака по диагонали или прямой
+//     if (Math.abs(dr) === Math.abs(dc) || dr === 0 || dc === 0) {
+//         const stepR = dr === 0 ? 0 : dr > 0 ? 1 : -1;
+//         const stepC = dc === 0 ? 0 : dc > 0 ? 1 : -1;
         
-        // Проверяем все клетки между королём и атакующей фигурой
-        let r = kingPos.row + stepR;
-        let c = kingPos.col + stepC;
-        while (r !== attackerPos.row || c !== attackerPos.col) {
-            if (move.row === r && move.col === c) {
-                return true;
-            }
-            r += stepR;
-            c += stepC;
-        }
-    }
+//         // Проверяем все клетки между королём и атакующей фигурой
+//         let r = kingPos.row + stepR;
+//         let c = kingPos.col + stepC;
+//         while (r !== attackerPos.row || c !== attackerPos.col) {
+//             if (move.row === r && move.col === c) {
+//                 return true;
+//             }
+//             r += stepR;
+//             c += stepC;
+//         }
+//     }
     
-    return false;
-}
+//     return false;
+// }
 
     // doesMoveBlockCheck(fromRow, fromCol, move, piece, isWhite) {
     //     if (piece.toLowerCase() === 'k') return false;
@@ -1571,7 +1993,7 @@ isSquareAttacked(row, col, byWhite, board = this.pieces) {
             const piece = board[r][c];
             if (piece && piece.toLowerCase() === 'n' && 
                 (piece === piece.toUpperCase()) === byWhite) {
-                // console.log(`Knight attack found at [${r},${c}]`);
+                console.log(`Knight attack found at [${r},${c}]`);
                 return true;
             }
         }
@@ -1614,7 +2036,7 @@ isSquareAttacked(row, col, byWhite, board = this.pieces) {
                 const piece = board[r][c];
                 if (piece && piece.toLowerCase() === 'k' && 
                     (piece === piece.toUpperCase()) === byWhite) {
-                    console.log(`King attack found at [${r},${c}]`);
+                    // console.log(`King attack found at [${r},${c}]`);
                     return true;
                 }
             }
@@ -1735,43 +2157,43 @@ findAllAttackers(kingPos, isWhite) {
     }
     return attackers;
 }
-canBlockCheck(kingPos, attackerPos, move, isWhite) {
-    const attackerPiece = this.pieces[attackerPos.row][attackerPos.col].toLowerCase();
+// canBlockCheck(kingPos, attackerPos, move, isWhite) {
+//     const attackerPiece = this.pieces[attackerPos.row][attackerPos.col].toLowerCase();
     
-    // Конь атакует - нельзя блокировать, только взять
-    if (attackerPiece === 'n') {
-        return false;
-    }
+//     // Конь атакует - нельзя блокировать, только взять
+//     if (attackerPiece === 'n') {
+//         return false;
+//     }
     
-    // Для пешки - особый случай
-    if (attackerPiece === 'p') {
-        // Пешка может блокировать только если она бьёт атакующую фигуру
-        return move.row === attackerPos.row && move.col === attackerPos.col;
-    }
+//     // Для пешки - особый случай
+//     if (attackerPiece === 'p') {
+//         // Пешка может блокировать только если она бьёт атакующую фигуру
+//         return move.row === attackerPos.row && move.col === attackerPos.col;
+//     }
     
-    // Определяем направление атаки
-    const dr = attackerPos.row - kingPos.row;
-    const dc = attackerPos.col - kingPos.col;
+//     // Определяем направление атаки
+//     const dr = attackerPos.row - kingPos.row;
+//     const dc = attackerPos.col - kingPos.col;
     
-    // Если атака по диагонали или прямой
-    if (Math.abs(dr) === Math.abs(dc) || dr === 0 || dc === 0) {
-        const stepR = dr === 0 ? 0 : dr > 0 ? 1 : -1;
-        const stepC = dc === 0 ? 0 : dc > 0 ? 1 : -1;
+//     // Если атака по диагонали или прямой
+//     if (Math.abs(dr) === Math.abs(dc) || dr === 0 || dc === 0) {
+//         const stepR = dr === 0 ? 0 : dr > 0 ? 1 : -1;
+//         const stepC = dc === 0 ? 0 : dc > 0 ? 1 : -1;
         
-        // Проверяем все клетки между королём и атакующей фигурой
-        let r = kingPos.row + stepR;
-        let c = kingPos.col + stepC;
-        while (r !== attackerPos.row || c !== attackerPos.col) {
-            if (move.row === r && move.col === c) {
-                return true;
-            }
-            r += stepR;
-            c += stepC;
-        }
-    }
+//         // Проверяем все клетки между королём и атакующей фигурой
+//         let r = kingPos.row + stepR;
+//         let c = kingPos.col + stepC;
+//         while (r !== attackerPos.row || c !== attackerPos.col) {
+//             if (move.row === r && move.col === c) {
+//                 return true;
+//             }
+//             r += stepR;
+//             c += stepC;
+//         }
+//     }
     
-    return false;
-}
+//     return false;
+// }
 
 // getRawMovesForPiece(row, col, piece, ignoreCheck = false) {
 //     switch (piece.toLowerCase()) {
@@ -2126,53 +2548,151 @@ getKingMovesRaw(row, col, piece) {
         return newRights;
     }
     
-    isCheckmate(board, color) {
-        if (!this.isKingInCheck(board, color)) {
-            return false;
-        }
+    // isCheckmate(board, color) {
+    //     let isWhite = color === 'white' ? true : false
 
-        // Проверяем, есть ли хотя бы один допустимый ход
-        const kingSymbol = color === 'white' ? 'K' : 'k';
-        for (let row = 0; row < 8; row++) {
-            for (let col = 0; col < 8; col++) {
-                const piece = board[row][col];
-                if (piece && ((piece === piece.toUpperCase() && color === 'white') || 
-                             (piece === piece.toLowerCase() && color === 'black'))) {
-                    const moves = this.getPossibleMoves(row, col, piece);
-                    for (const move of moves) {
-                        const tempBoard = this.copyBoard();
-                        tempBoard[move.row][move.col] = piece;
-                        tempBoard[row][col] = '';
+    //     if (!this.isKingInCheck(board, isWhite)) {
+    //         return false;
+    //     }
+    //     console.log('isCheckmate',isWhite)
+    //     console.table(board)
+        
+
+    //     // Проверяем, есть ли хотя бы один допустимый ход
+    //     const kingSymbol = color === 'white' ? 'K' : 'k';
+    //     for (let row = 0; row < 8; row++) {
+    //         for (let col = 0; col < 8; col++) {
+    //             const piece = board[row][col];
+    //             if (piece && ((piece === piece.toUpperCase() && color === 'white') || 
+    //                          (piece === piece.toLowerCase() && color === 'black'))) {
+    //                 const moves = this.getRawMovesForPiece(row, col, piece);
+    //                 for (const move of moves) {
+    //                     const tempBoard = this.copyBoard();
+    //                     tempBoard[move.row][move.col] = piece;
+    //                     tempBoard[row][col] = '';
                         
-                        if (!this.isKingInCheck(tempBoard, color)) {
-                            return false;
-                        }
-                    }
-                }
-            }
-        }
-        return true;
-    }
-    
-    isStalemate(pieces, isWhiteTurn) {
-        if (this.isKingInCheck(pieces, isWhiteTurn)) {
-            return false;
-        }
+    //                     if (!this.isKingInCheck(tempBoard, isWhite)) {
+    //                         return false;
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     return true;
+    // }
+//     isCheckmate(board, isWhite) {
+//     // Проверяем, находится ли король под шахом
+//     if (!this.isKingInCheck(board, isWhite)) {
+//         return false;
+//     }
 
-        for (let row = 0; row < 8; row++) {
-            for (let col = 0; col < 8; col++) {
-                const piece = pieces[row][col];
-                if (piece !== '' && (piece === piece.toUpperCase()) === isWhiteTurn) {
-                    const moves = this.getMovesForPiece(row, col, piece);
-                    if (moves.length > 0) {
+//     // Проверяем, есть ли хотя бы один допустимый ход
+//     const kingSymbol = isWhite ? 'K' : 'k';
+//     console.log('checkmate')
+//     console.table(board)
+//     for (let row = 0; row < 8; row++) {
+//         for (let col = 0; col < 8; col++) {
+//             const piece = board[row][col];
+//             // Проверяем только фигуры нужного цвета
+//             if (piece && (piece === piece.toUpperCase()) === isWhite) {
+//                 const moves = this.getPossibleMoves(row, col, piece);
+//                 if (moves.length > 0) {
+//                     console.log(moves)
+//                     return false; // Нашли допустимый ход - не мат
+//                 }
+//             }
+//         }
+//     }
+    
+//     return true; // Ни одного допустимого хода - мат
+// }
+isCheckmate(board, isWhite) {
+    // console.group('Detailed Checkmate Check');
+    // console.log(`Checking mate for ${isWhite ? 'white' : 'black'} pieces`);
+    // console.log('Current board state:');
+    // console.table(board);
+
+    // 1. Find the king
+    const kingSymbol = isWhite ? 'K' : 'k';
+    const kingPos = this.findKingInBoard(board, isWhite);
+    // console.log(`King (${kingSymbol}) position:`, kingPos);
+
+    if (!kingPos) {
+        // console.error('King not found!');
+        // console.groupEnd();
+        return false;
+    }
+
+    // 2. Check if king is in check
+    const inCheck = this.isKingInCheck(board, isWhite);
+    // console.log(`Is king in check: ${inCheck}`);
+    
+    if (!inCheck) {
+        // console.log('King is not in check - not checkmate');
+        // console.groupEnd();
+        return false;
+    }
+
+    // console.log('King is in check, checking for legal moves...');
+
+    // 3. Check all pieces for legal moves
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const piece = board[row][col];
+            if (!piece) continue;
+
+            const isPieceWhite = piece === piece.toUpperCase();
+            if (isPieceWhite === isWhite) {
+                // console.log(`\nChecking ${isWhite ? 'white' : 'black'} piece ${piece} at [${row},${col}]`);
+                
+                const moves = this.getPossibleMoves(row, col, piece);
+                // console.log('Possible moves:', moves);
+
+                // Simulate each move to see if it removes check
+                for (const move of moves) {
+                    const tempBoard = this.copyBoard(board);
+                    tempBoard[move.row][move.col] = piece;
+                    tempBoard[row][col] = '';
+
+                    const stillInCheck = this.isKingInCheck(tempBoard, isWhite);
+                    // console.log(`Move to [${move.row},${move.col}], still in check: ${stillInCheck}`);
+
+                    if (!stillInCheck) {
+                        // console.log(`Found legal move that removes check - not checkmate`);
+                        // console.groupEnd();
                         return false;
                     }
                 }
             }
         }
-        
-        return true;
     }
+
+    // console.log('No legal moves found - checkmate!');
+    // console.groupEnd();
+    return true;
+}
+    isStalemate(pieces, color) {
+    // 1. Король не должен быть под шахом
+    if (this.isKingInCheck(pieces, this.isWhite)) {
+        return false;
+    }
+
+    // 2. Проверяем, есть ли допустимые ходы у игрока color
+    for (let row = 0; row < 8; row++) {
+        for (let col = 0; col < 8; col++) {
+            const piece = pieces[row][col];
+            // Проверяем только фигуры нужного цвета
+            if (piece && this.isSameColor(piece, color === 'white' ? 'K' : 'k')) {
+                const moves = this.getPossibleMoves(row, col, piece);
+                if (moves.length > 0) {
+                    return false; // Нашли хотя бы один допустимый ход - не пат
+                }
+            }
+        }
+    }
+    
+    return true; // Ни одного допустимого хода - пат
+}
     
     copyBoard(board = this.pieces) {
         return board.map(row => [...row]);
