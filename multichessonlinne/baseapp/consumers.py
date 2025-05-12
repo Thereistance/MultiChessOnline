@@ -80,26 +80,26 @@ class GameConsumer(WebsocketConsumer):
         if self.game_id not in game_states:
             game = Game.objects.get(id=self.game_id)
             game_states[self.game_id] = {
-                # "board": 
-                # [
-                #     ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-                #     ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-                #     ['', '', '', '', '', '', '', ''],
-                #     ['', '', '', '', '', '', '', ''],
-                #     ['', '', '', '', '', '', '', ''],
-                #     ['', '', '', '', '', '', '', ''],
-                #     ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-                #     ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
-                # ],
-                "board": [['', '', '', 'Q', '', '', '', 'r'],
-                          ['', 'p', '', '', '', '', '', 'p'],
-                          ['', '', '', '', 'B', '', 'k', 'B'],
-                          ['p', '', 'p', 'P', '', '', 'p', ''],
-                          ['', 'n', 'P', 'P', '', '', '', ''],
-                          ['', '', '', '', '', '', 'P', ''],
-                          ['P', 'P', '', '', '', '', '', 'P'],
-                          ['R', 'N', '', '', 'K', '', 'N', 'R']
+                "board": 
+                [
+                    ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                    ['', '', '', '', '', '', '', ''],
+                    ['', '', '', '', '', '', '', ''],
+                    ['', '', '', '', '', '', '', ''],
+                    ['', '', '', '', '', '', '', ''],
+                    ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                    ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
                 ],
+                # "board": [['', '', '', 'Q', '', '', '', 'r'],
+                #           ['', 'p', '', '', '', '', '', 'p'],
+                #           ['', '', '', '', 'B', '', 'k', 'B'],
+                #           ['p', '', 'p', 'P', '', '', 'p', ''],
+                #           ['', 'n', 'P', 'P', '', '', '', ''],
+                #           ['', '', '', '', '', '', 'P', ''],
+                #           ['P', 'P', '', '', '', '', '', 'P'],
+                #           ['R', 'N', '', '', 'K', '', 'N', 'R']
+                # ],
                 "current_player": "white",
                 "players": {
                     "white": game.player1.username,
@@ -316,6 +316,8 @@ class GameConsumer(WebsocketConsumer):
         #     game = Game.objects.get(id=self.game_id)
         #     game.is_active = False
         #     game.save()
+        winner_user_username = ""
+        loser_user_username = ""
         if is_checkmate:
             game_state["status"] = "checkmate"
             game_state["winner"] = game_state["current_player"]
@@ -326,7 +328,8 @@ class GameConsumer(WebsocketConsumer):
             # Получаем победителя и проигравшего
             winner_user = game.player1 if winner_color == "white" else game.player2
             loser_user = game.player2 if winner_user == game.player1 else game.player1
-
+            winner_user_username = winner_user.username
+            loser_user_username = loser_user.username
             # ✨ Обновление рейтинга в транзакции
             try:
                 with transaction.atomic():
@@ -377,7 +380,7 @@ class GameConsumer(WebsocketConsumer):
                 "captured_pieces": game_state["captured_pieces"],
                 "status": game_state["status"],
                 "winner": game_state["winner"],
-                "winner_user": winner_user.username,
+                "winner_user": winner_user_username,
                 "move_count": game_state["move_count"],
                 "last_capture_or_pawn_move": game_state["last_capture_or_pawn_move"]
             }
