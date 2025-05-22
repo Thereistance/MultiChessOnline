@@ -27,22 +27,32 @@ class ChatConsumer(WebsocketConsumer):
         self.channel_layer.group_discard(self.room_group_name, self.channel_name)    
     def receive(self, text_data):
         text_data_data = json.loads(text_data)
-        message = text_data_data['message']
-        room_id = self.room_id
-        sender = self.scope['user'].username
-        sender_model = User.objects.get(username=sender)
-        room_model = Room.objects.get(id=room_id)
-        self.save_message(sender_model,message,room_model)
-        
-        
-        async_to_sync(self.channel_layer.group_send)(
-            self.room_group_name,
-            {
-                'type':'chat_message',
-                'message': message,
-                'user': sender
-            }
-        )
+        print(text_data_data)
+        if text_data_data.get('type') == 'chat_message':
+            message = text_data_data['message']
+            room_id = self.room_id
+            sender = self.scope['user'].username
+            sender_model = User.objects.get(username=sender)
+            room_model = Room.objects.get(id=room_id)
+            self.save_message(sender_model,message,room_model)
+            
+            
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    'type':'chat_message',
+                    'message': message,
+                    'user': sender
+                }
+            )
+        elif text_data_data.get('type') == 'game_started':
+            async_to_sync(self.channel_layer.group_send)(
+                self.room_group_name,
+                {
+                    'type': 'game_started',
+                    'game_id': text_data_data['game_id']
+                }
+            )
     def chat_message(self, event):
         message = event['message']
         user = event['user']
@@ -52,6 +62,11 @@ class ChatConsumer(WebsocketConsumer):
             'message':message,
             'user':user
             
+        }))
+    def game_started(self, event):
+        self.send(text_data=json.dumps({
+            'type': 'game_started',
+            'game_id': event['game_id']
         }))
     def save_message(self,sender_model, message, room_model):
         room_message = Message.objects.create(

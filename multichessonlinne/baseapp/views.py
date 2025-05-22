@@ -6,6 +6,8 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import User
 from django.contrib import messages
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 
 def loginPage(request):
     if request.user.is_authenticated:
@@ -138,6 +140,14 @@ def startGame(request,pk):
         )
         room.is_active = True
         room.save()
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f"room_{room.id}",
+            {
+                "type": "game_started",
+                "game_id": game.id
+            }
+        )
         messages.success(request, "Game started successfully!")
         return redirect('game', game.id)
     else:

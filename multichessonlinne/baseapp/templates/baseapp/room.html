@@ -99,7 +99,79 @@ button:hover {
     margin-top: 30px;
     width: 100%;
 }
+.chat-container {
+    width: 100%; /* Исправлено */
+    max-width: 500px; /* Добавлено ограничение */
+    height: 300px; /* Установлена высота */
+    margin: 10px auto; /* Центрирование */
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    background-color: #f9f9f9;
+    box-sizing: border-box; 
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto; /* Добавлен скролл */
+}
 
+.messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 10px;
+    max-height: 250px;
+}
+
+.message {
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.message .text {
+    font-size: 16px;
+    color: #333;
+}
+
+.message .author {
+    font-size: 14px;
+    color: #777;
+    margin-top: 5px;
+}
+
+.message .author::before {
+    content: "by ";
+    color: #999;
+}
+
+.form-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.form-container input[type="text"] {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.form-container button {
+    padding: 10px 15px;
+    background-color: #007bff;
+    border: none;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.form-container button:hover {
+    background-color: #0056b3;
+}
 /* 🔹 Адаптация под мобильные устройства */
 @media (max-width: 768px) {
     .table-and-button {
@@ -167,8 +239,61 @@ button:hover {
 </div>
 
 <!-- Чат под таблицей -->
-<div class="chat-container">
-    {% include 'baseapp/message_block.html' %}
-</div>
-
+    
+    <div class="chat-container">
+        <div class="messages" id="messages_block">
+            {% for message in room_messages %}
+            <div class="message">
+                <div class="text">{{ message.text }}</div>
+                <div class="author">@{{ message.user }}</div>
+            </div>
+            {% endfor %}
+        </div>
+    
+        <div class="form-container" >
+            <form id="form">
+                <input type="text" name="message" />
+            </form>
+        </div>
+    </div>
+    <script>
+        const roomId = "{{ room.id }}";
+        const roomSocket = new WebSocket(
+            `ws://${window.location.host}/ws/room/${roomId}/`
+        );
+    
+        roomSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            if (data.type === "chat") {
+                console.log(data)
+                // Обработка сообщений чата
+                const messages = document.getElementById('messages_block');
+                const messageHTML = `
+                    <div class="message">
+                        <div class="text">${data.message}</div>
+                        <div class="author">@${data.user}</div>
+                    </div>
+                `;
+                messages.insertAdjacentHTML('beforeend', messageHTML);
+                messages.scrollTop = messages.scrollHeight;
+            } 
+            else if (data.type === "game_started") {
+                // Перенаправляем на страницу игры при получении уведомления
+                window.location.href = `/game/${data.game_id}/`;
+            }
+        };
+    
+        // Обработчик формы чата
+        document.getElementById('form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const messageInput = e.target.message;
+            roomSocket.send(JSON.stringify({
+                'type': 'chat_message',
+                'message': messageInput.value
+            }));
+            messageInput.value = '';
+        });
+        
+    </script>
 {% endblock content %}
