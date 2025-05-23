@@ -6,35 +6,44 @@
     {% if request.user == game.player1 or request.user == game.player2 %}
     <div class="game-header">
         <h1>Игра в комнате: {{ game.room.name }}</h1>
+        <div class="player-info opponent-info moved">
+            {% if request.user == game.player1 %}
+                <div class="player-box player2">
+                    <!-- <span class="player-name">{{ game.player2.username }}</span> -->
+                    <span>{{player2_rating}}</span>
+                </div>
+            {% elif request.user == game.player2 %}
+                <div class="player-box player1">
+                    <!-- <span class="player-name">{{ game.player1.username }}</span> -->
+                    <span>{{player1_rating}}</span>
+    
+                </div>
+            {% endif %}
     </div>
     {% endif %}
-
-    <!-- Противник (вверху) -->
-    <div class="player-info opponent-info">
-        {% if request.user == game.player1 %}
-            <div class="player-box player2">
-                <!-- <span class="player-name">{{ game.player2.username }}</span> -->
-                <span>{{player2_rating}}</span>
-            </div>
-        {% elif request.user == game.player2 %}
-            <div class="player-box player1">
-                <!-- <span class="player-name">{{ game.player1.username }}</span> -->
-                <span>{{player1_rating}}</span>
-
-            </div>
-        {% endif %}
-        <div class="game-status">
-            Статус: <span class="status-badge">{% if game.is_active %}Активна{% else %}Завершена{% endif %}</span>
-        </div>
-        {% if request.user == game.player1 or request.user == game.player2 %}
-    <!-- Остальной код -->
-    {% else %}
+    {% if request.user != game.player1 and request.user != game.player2 %}
     <div class="not-player-message">
         <h2>Вы не являетесь участником этой игры</h2>
         <p>Вы можете наблюдать за игрой, но не можете делать ходы.</p>
     </div>
     {% endif %}
+    <!-- Блок "кто против кого" показывается только для зрителей -->
+    {% if request.user != game.player1 and request.user != game.player2 %}
+    <div class="player-info opponent-info">
+        <div class="player-box player1">
+            <!-- <span class="player-name">{{ game.player1.username }}</span> -->
+            <span class="player-rating">({{player1_rating}})</span>
+        </div>
+        <div class="vs-text">против</div>
+        <div class="player-box player2">
+            <!-- <span class="player-name">{{ game.player2.username }}</span> -->
+            <span class="player-rating">({{player2_rating}})</span>
+        </div>
+        <div class="game-status">
+            Статус: <span class="status-badge">{% if game.is_active %}Активна{% else %}Завершена{% endif %}</span>
+        </div>
     </div>
+    {% endif %}
 
     <div class="chess-layout">
         <div class="chess-main">
@@ -112,6 +121,7 @@
 </div>
 </div>
 
+
 <style>
     .main-content {
         background-color: #2a2a2a;
@@ -149,11 +159,11 @@
 
     .player-info {
         display: flex;
-        gap: 30px;
+        gap: 15px;
         flex-wrap: wrap;
         margin: 20px 0;
-        justify-content: left;
-        align-items: left;
+        justify-content: center;
+        align-items: center;
     }
 
     .opponent-info {
@@ -169,6 +179,9 @@
         border-radius: 8px;
         font-weight: bold;
         box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
     }
 
     .player1 {
@@ -183,6 +196,22 @@
         color: #b58863;
     }
 
+    .player-name {
+        font-size: 1.1em;
+        margin-bottom: 5px;
+    }
+
+    .player-rating {
+        font-size: 1.4em;
+        opacity: 0.8;
+    }
+
+    .vs-text {
+        font-size: 1.2em;
+        color: #e0e0e0;
+        font-weight: bold;
+    }
+
     .player-label {
         margin-right: 8px;
     }
@@ -190,6 +219,7 @@
     .game-status {
         align-self: center;
         color: #e0e0e0;
+        margin-left: 20px;
     }
 
     .status-badge {
@@ -492,7 +522,14 @@
         padding-right: 10px;
         margin-bottom: 15px;
     }
-
+    .moved{
+        margin: 20px 0;
+        gap: 30px;
+        margin-left: auto;
+        justify-content: left;
+        align-items: left;
+        padding-left: 40px;
+    }
     .message {
         margin-bottom: 15px;
         padding: 10px;
