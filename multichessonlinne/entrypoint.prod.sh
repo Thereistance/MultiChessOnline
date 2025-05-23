@@ -2,8 +2,10 @@
 
 set -e
 
+# Альтернативный способ проверки PostgreSQL без pg_isready
 echo "Waiting for PostgreSQL..."
-until pg_isready -h db -U postgres; do
+while ! python -c "import psycopg2; psycopg2.connect(dbname='multichessOnlineDB', user='postgres', password='maxjke114', host='db')" 2>/dev/null; do
+  echo "PostgreSQL is unavailable - sleeping"
   sleep 1
 done
 echo "PostgreSQL is up - continuing"

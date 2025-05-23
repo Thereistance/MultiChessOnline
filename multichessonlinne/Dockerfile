@@ -38,7 +38,9 @@ COPY --from=builder /usr/local/bin/ /usr/local/bin/
 # Устанавливаем только runtime-зависимости для psycopg2
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+    gcc \
     libpq5 && \
+    postgresql-client \
     rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
