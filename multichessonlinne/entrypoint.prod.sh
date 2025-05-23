@@ -2,12 +2,13 @@
 
 set -e
 
-# Ждем готовности PostgreSQL (добавьте эти строки)
 echo "Waiting for PostgreSQL..."
-while ! nc -z db 5432; do
-  sleep 0.1
+python manage.py check --database default > /dev/null 2>&1
+while [ $? -ne 0 ]; do
+  sleep 1
+  python manage.py check --database default > /dev/null 2>&1
 done
-echo "PostgreSQL started"
+echo "PostgreSQL is up - continuing"
 
 python manage.py migrate
 python manage.py collectstatic --noinput
