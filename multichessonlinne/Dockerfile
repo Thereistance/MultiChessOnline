@@ -28,6 +28,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 FROM python:3.12-slim
 
 RUN apt-get update && \
+    -y netcat \
     apt-get install -y --no-install-recommends \
     postgresql-client \
     libpq5 && \
