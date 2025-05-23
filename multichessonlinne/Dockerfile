@@ -27,6 +27,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Stage 2: Production stage
 FROM python:3.12-slim
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    postgresql-client \
+    libpq5 && \
+    rm -rf /var/lib/apt/lists/*
+    
 RUN useradd -m -r appuser && \
    mkdir /app && \
    chown -R appuser /app
@@ -47,7 +53,6 @@ WORKDIR /app
 
 # Copy application code
 COPY --chown=appuser:appuser . .
-
 RUN sed -i 's/\r$//' /app/entrypoint.prod.sh && \
     chmod +x /app/entrypoint.prod.sh
 # Set environment variables to optimize Python
