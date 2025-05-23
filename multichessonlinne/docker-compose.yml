@@ -2,7 +2,7 @@ services:
   db:
     image: postgres:17
     environment:
-      POSTGRES_PASSWORD: maxjke114  # <-- REQUIRED
+      POSTGRES_PASSWORD: maxjke114
       POSTGRES_USER: postgres
       POSTGRES_DB: multichessOnlineDB
     ports:

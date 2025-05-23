@@ -94,16 +94,14 @@ CHANNEL_LAYERS = {
 #     }
 # }
 DATABASES = {
-     'default': {
-         'ENGINE': 'django.db.backends.{}'.format(
-             os.getenv('DATABASE_ENGINE', 'sqlite3')
-         ),
-         'NAME': os.getenv('DATABASE_NAME', 'multichessonlineDB'),
-         'USER': os.getenv('DATABASE_USERNAME', 'postgres'),
-         'PASSWORD': os.getenv('DATABASE_PASSWORD', 'maxjke114'),
-         'HOST': os.getenv('DATABASE_HOST', '127.0.0.1'),
-         'PORT': os.getenv('DATABASE_PORT', 5432),
-     }
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'multichessOnlineDB'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'maxjke114'),
+        'HOST': os.getenv('DATABASE_HOST', 'db'),  # 'db' - имя сервиса в docker-compose
+        'PORT': os.getenv('DATABASE_PORT', '5432'),
+    }
 }
 
 # Password validation
@@ -141,10 +139,16 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 
+# STATIC_URL = 'static/'
+# # STATIC_ROOT = BASE_DIR / "static"
+# STATICFILES_DIRS = [
+#      BASE_DIR / 'static',  # Папка со статическими файлами в корне проекта
+# ]
+
 STATIC_URL = 'static/'
-# STATIC_ROOT = BASE_DIR / "static"
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # Добавьте эту строку
 STATICFILES_DIRS = [
-     BASE_DIR / 'static',  # Папка со статическими файлами в корне проекта
+    BASE_DIR / 'static',
 ]
 # STATIC_ROOT = BASE_DIR / 'staticfiles'
 # Default primary key field type
