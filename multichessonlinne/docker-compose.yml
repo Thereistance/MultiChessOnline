@@ -4,7 +4,7 @@ services:
     environment:
       POSTGRES_PASSWORD: maxjke114
       POSTGRES_USER: postgres
-      POSTGRES_DB: multichessOnlineDB
+      POSTGRES_DB: postgres
     ports:
       - "5432:5432"
     volumes:
@@ -24,7 +24,7 @@ services:
     env_file:
       - .env.prod
     environment:
-      - DATABASE_URL=postgres://postgres:maxjke114@db:5432/multichessOnlineDB
+      - DATABASE_URL=postgres://postgres:maxjke114@db:5432/postgres
 
   frontend-proxy:
     image: nginx:latest
