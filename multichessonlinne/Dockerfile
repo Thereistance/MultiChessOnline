@@ -48,6 +48,8 @@ WORKDIR /app
 # Copy application code
 COPY --chown=appuser:appuser . .
 
+RUN sed -i 's/\r$//' /app/entrypoint.prod.sh && \
+    chmod +x /app/entrypoint.prod.sh
 # Set environment variables to optimize Python
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1 
@@ -59,7 +61,7 @@ USER appuser
 EXPOSE 8000
 
 # Make entry file executable
-RUN chmod +x /app/entrypoint.prod.sh
 
+RUN chmod +x /app/entrypoint.prod.sh
 # Start the application using Gunicorn
 CMD ["/app/entrypoint.prod.sh"]
