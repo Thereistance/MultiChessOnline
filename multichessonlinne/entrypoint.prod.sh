@@ -1,3 +1,9 @@
+
+#!/bin/sh
+
+set -e
+
+python manage.py migrate
 python manage.py collectstatic --noinput
-python manage.py migrate --noinput
-python -m gunicorn --bind 0.0.0.0:8000 --workers 3 multichessonlinne.wsgi:application
+
+exec gunicorn multichessonlinne.wsgi:application --bind 0.0.0.0:8000
