@@ -1,10 +1,27 @@
 {% extends 'main.html' %}
 
 {% block content %}
-<div>
-    <div>
-        Home Page
+<div class="home-container">
+    <div class="hero-section">
+        <h1>MultiChessOnline - Играйте в шахматы с игроками со всего мира!</h1>
+        <p>Присоединяйтесь к крупнейшему шахматному сообществу. Играйте бесплатно в любое время, с любого устройства.</p>
+        
+        <div class="cta-buttons">
+            <a href="{% url 'rooms' %}" class="btn btn-primary">Играть сейчас</a>   
+        </div>
     </div>
+
+    <div class="features-section">
+    
+        
+        <div class="feature">
+            <h3>Рейтинговая система</h3>
+            <p>Соревнуйтесь и повышайте свой рейтинг среди игроков своего уровня</p>
+        </div>
+        
+       
+    </div>
+
 </div>
 
-{%  endblock content %}
+{% endblock content %}

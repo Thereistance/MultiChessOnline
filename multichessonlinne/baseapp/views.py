@@ -12,6 +12,10 @@ from asgiref.sync import async_to_sync
 def loginPage(request):
     if request.user.is_authenticated:
         return redirect('home')
+    if request.method == 'GET':
+        storage = messages.get_messages(request)
+        for _ in storage:
+            pass  # Просто читаем сообщения, чтобы очистить
     if request.method == "POST":
         username = request.POST.get('username')
         password = request.POST.get('password')
@@ -181,11 +185,33 @@ def ratingPage(request):
     }
     return render(request, 'baseapp/rating.html', context)
 
+# def profilePage(request, pk):
+#     user = User.objects.get(id=pk)
+#     rating = Rating.objects.get(user=user)
+#     games = Game.objects.filter(player1=user) | Game.objects.filter(player2=user)
+#     games = games.order_by('-started_at')
+
+#     context = {
+#         'profile_user': user,
+#         'rating': rating,
+#         'games': games,
+#     }
+
+#     return render(request, 'baseapp/profile.html', context)
 def profilePage(request, pk):
-    user = User.objects.get(id=pk)
-    rating = Rating.objects.get(user=user)
+    try:
+        user = User.objects.get(id=pk)
+    except User.DoesNotExist:
+        # Обработка случая, когда пользователь не найден
+        return render(request, 'baseapp/profile.html', {'error': 'User not found'})
+
+    try:
+        rating = Rating.objects.get(user=user)
+    except Rating.DoesNotExist:
+        rating = None
+
     games = Game.objects.filter(player1=user) | Game.objects.filter(player2=user)
-    games = games.order_by('-started_at')
+    games = games.order_by('-started_at') if games.exists() else None
 
     context = {
         'profile_user': user,
@@ -194,7 +220,6 @@ def profilePage(request, pk):
     }
 
     return render(request, 'baseapp/profile.html', context)
-    
 @login_required(login_url='login')
 def createRoom(request):
     form = RoomForm()

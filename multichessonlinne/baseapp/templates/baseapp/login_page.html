@@ -46,7 +46,7 @@
         font-size: 16px;
         transition: 0.3s;
     }
-
+    
     .input-group input:focus {
         border-color: #007bff;
         outline: none;
@@ -85,12 +85,20 @@
     .register-link a:hover {
         text-decoration: underline;
     }
+     /* 🔹 Анимация для сообщений */
+   
 </style>
 
 <!-- 🔹 Контейнер для формы -->
 <div class="login-container">
     <h2>🔑 Login to Your Account</h2>
-
+    {% if messages %}
+    <div class="error-messages">
+        {% for message in messages %}
+            <div class="alert alert-error">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
     <form action="" method="POST">
         {% csrf_token %}
 
