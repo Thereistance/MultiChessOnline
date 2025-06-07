@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+import random
 
 def loginPage(request):
     if request.user.is_authenticated:
@@ -65,25 +66,7 @@ def roomsPage(request):
     rooms = Room.objects.all()
     context = {'rooms': rooms}
     return render(request, 'baseapp/rooms_page.html', context)
-# @login_required(login_url='login')
-# def roomPage(request,pk):
-#     room = Room.objects.get(id=pk)
-#     room_messages = room.messages.order_by('created_at')
-#     if request.method == "POST":
-#         if request.user.is_authenticated:
-#             room_message = Message.objects.create(
-#                 user=request.user,
-#                 room = room,
-#                 text = request.POST.get('body')
-#             )
-#             return redirect('room', room.id)
-#     if not room.is_active:
-#         if room.game != NULL:
-            
-#             context = {'room': room,'room_messages': room_messages}
-#     else:
-#        return redirect('game',room.game.id)
-#     return render(request, 'baseapp/room.html', context)
+
 @login_required(login_url='login')
 def roomPage(request, pk):
     room = Room.objects.get(id=pk)
@@ -98,32 +81,19 @@ def roomPage(request, pk):
             )
             return redirect('room', room.id)
     
-    # Проверяем, есть ли игра в комнате
+
     if hasattr(room, 'game'):
-        # Если комната неактивна, но игра существует - перенаправляем на игру
+   
         if not room.is_active:
             return redirect('game', room.game.id)
-        # Если комната активна (игра идет) - тоже перенаправляем на игру
+   
         else:
             return redirect('game', room.game.id)
     
-    # Если игры нет, просто отображаем комнату
+
     context = {'room': room, 'room_messages': room_messages}
     return render(request, 'baseapp/room.html', context)
 
-# @login_required(login_url='login')
-# def startGame(request,pk):
-#     room = Room.objects.get(id=pk)
-#     players = room.players.all()
-#     if Game.objects.filter(room=room, is_active=True).exists():
-#         messages.error(request, "A game is already active in this room.")
-#         return redirect('game',room.game.id)
-#     if room.players.count() == 2 and request.user==room.creator:
-#         game = Game.objects.create(room=room,player1=room.creator,player2=players.exclude(id=room.creator.id).first(),is_active = True)
-#         room.is_active = True
-#         room.save()
-#     return redirect('game',game.id)
- 
 @login_required(login_url='login')
 def startGame(request,pk):
     room = Room.objects.get(id=pk)
@@ -135,11 +105,12 @@ def startGame(request,pk):
             return redirect('game', active_game.id)
     
     if room.players.count() == 2 and request.user == room.creator:
-     
+        player_list = list(players)
+        random.shuffle(player_list)
         game = Game.objects.create(
             room=room,
-            player1=room.creator,
-            player2=players.exclude(id=room.creator.id).first(),
+            player1=player_list[0],  # Белые
+            player2=player_list[1],  # Черные
             is_active=True
         )
         room.is_active = True
@@ -162,7 +133,16 @@ def startGame(request,pk):
 def joinGame(request,pk):
     room = Room.objects.get(id=pk)
     if request.method == "POST":
-        room.players.add(request.user)    
+        room.players.add(request.user)  
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f"room_{room.id}",
+            {
+                "type": "join_game",
+                'joined_user': request.user.username
+            }
+        )
+    messages.success(request, "Join room successfully!")  
     return redirect('room',pk)   
 
 def gamePage(request,pk):
@@ -174,8 +154,11 @@ def gamePage(request,pk):
     room_messages = room.messages.order_by('created_at')
     player1_rating = Rating.objects.get_or_create(user=game.player1)[0]
     player2_rating = Rating.objects.get_or_create(user=game.player2)[0] if game.player2 else None
-    # print(room_messages)
-    context = {'game': game, 'room' : room, 'room_messages': room_messages, "player1_rating":player1_rating, 'player2_rating': player2_rating}
+    context = {'game': game,
+               'room' : room,
+               'room_messages': room_messages,
+               "player1_rating":player1_rating,
+               'player2_rating': player2_rating}
     return render(request, 'baseapp/game_page2.html', context)
 
 def ratingPage(request):
@@ -185,34 +168,18 @@ def ratingPage(request):
     }
     return render(request, 'baseapp/rating.html', context)
 
-# def profilePage(request, pk):
-#     user = User.objects.get(id=pk)
-#     rating = Rating.objects.get(user=user)
-#     games = Game.objects.filter(player1=user) | Game.objects.filter(player2=user)
-#     games = games.order_by('-started_at')
 
-#     context = {
-#         'profile_user': user,
-#         'rating': rating,
-#         'games': games,
-#     }
-
-#     return render(request, 'baseapp/profile.html', context)
 def profilePage(request, pk):
     try:
         user = User.objects.get(id=pk)
     except User.DoesNotExist:
-        # Обработка случая, когда пользователь не найден
         return render(request, 'baseapp/profile.html', {'error': 'User not found'})
-
     try:
         rating = Rating.objects.get(user=user)
     except Rating.DoesNotExist:
         rating = None
-
     games = Game.objects.filter(player1=user) | Game.objects.filter(player2=user)
     games = games.order_by('-started_at') if games.exists() else None
-
     context = {
         'profile_user': user,
         'rating': rating,

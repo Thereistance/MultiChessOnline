@@ -282,6 +282,10 @@ button:hover {
                 // Перенаправляем на страницу игры при получении уведомления
                 window.location.href = `/game/${data.game_id}/`;
             }
+            else if (data.type === 'join_game'){
+                console.log(data)
+                location.reload();
+            }
         };
     
         // Обработчик формы чата
@@ -294,6 +298,5 @@ button:hover {
             }));
             messageInput.value = '';
         });
-        
     </script>
 {% endblock content %}
